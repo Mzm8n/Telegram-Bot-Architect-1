@@ -19,6 +19,9 @@ config = context.config
 database_url = os.getenv("DATABASE_URL", "")
 if database_url:
     async_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
+    if "?" in async_url:
+        base_url = async_url.split("?")[0]
+        async_url = base_url
     config.set_main_option("sqlalchemy.url", async_url)
 
 if config.config_file_name is not None:

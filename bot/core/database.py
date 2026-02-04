@@ -48,6 +48,7 @@ async def init_database(url: str) -> Database:
 
 
 async def get_db() -> Database:
+    from bot.core.constants import ErrorMessages
     if db is None:
-        raise RuntimeError("Database not initialized")
+        raise RuntimeError(ErrorMessages.DATABASE_NOT_INITIALIZED)
     return db
