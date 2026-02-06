@@ -124,6 +124,24 @@ class FileService:
         total_pages = max(1, (total + per_page - 1) // per_page)
         return files, total_pages
 
+    async def list_all_files_by_section(
+        self,
+        session: AsyncSession,
+        section_id: int,
+    ) -> List[File]:
+        stmt = (
+            select(File)
+            .join(FileSection, File.id == FileSection.file_id)
+            .where(
+                FileSection.section_id == section_id,
+                File.is_active == True,
+                File.status == FileStatus.PUBLISHED.value,
+            )
+            .order_by(File.id.asc())
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
     async def link_file_to_section(
         self, session: AsyncSession, file_id: int, section_id: int
     ) -> bool:
