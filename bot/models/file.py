@@ -23,10 +23,9 @@ class File(Base):
     name: Mapped[str] = mapped_column(String(500))
     file_type: Mapped[str] = mapped_column(String(50))
     size: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
-    status: Mapped[FileStatus] = mapped_column(
-        SAEnum(FileStatus, name="file_status", create_constraint=False,
-               values_callable=lambda x: [e.value for e in x]),
-        default=FileStatus.PUBLISHED,
+    status: Mapped[str] = mapped_column(
+        String(20),
+        default=FileStatus.PUBLISHED.value,
     )
     uploaded_by: Mapped[int] = mapped_column(BigInteger, index=True)
     caption: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

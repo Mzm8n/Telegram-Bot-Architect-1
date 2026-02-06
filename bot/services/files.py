@@ -24,7 +24,7 @@ class FileService:
         uploaded_by: int,
         size: Optional[int] = None,
         caption: Optional[str] = None,
-        status: FileStatus = FileStatus.PUBLISHED,
+        status: str = FileStatus.PUBLISHED.value,
     ) -> File:
         f = File(
             file_id=file_id,
@@ -70,7 +70,7 @@ class FileService:
             .where(
                 FileSection.section_id == section_id,
                 File.is_active == True,
-                File.status == FileStatus.PUBLISHED,
+                File.status == FileStatus.PUBLISHED.value,
             )
         )
         result = await session.execute(count_stmt)
@@ -100,7 +100,7 @@ class FileService:
             .where(
                 FileSection.section_id == section_id,
                 File.is_active == True,
-                File.status == FileStatus.PUBLISHED,
+                File.status == FileStatus.PUBLISHED.value,
             )
         )
         total_result = await session.execute(count_stmt)
@@ -113,7 +113,7 @@ class FileService:
             .where(
                 FileSection.section_id == section_id,
                 File.is_active == True,
-                File.status == FileStatus.PUBLISHED,
+                File.status == FileStatus.PUBLISHED.value,
             )
             .order_by(File.id.desc())
             .offset(offset)

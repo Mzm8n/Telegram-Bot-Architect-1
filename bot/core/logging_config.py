@@ -18,7 +18,7 @@ def setup_logging(level: Optional[str] = None) -> logging.Logger:
     logger = logging.getLogger("bot")
     logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
     
-    logging.getLogger("aiogram").setLevel(logging.WARNING)
+    logging.getLogger("aiogram").setLevel(logging.INFO)
     logging.getLogger("aiohttp").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     

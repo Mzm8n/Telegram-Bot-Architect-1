@@ -593,7 +593,7 @@ async def handle_deep_link_file(bot: Bot, message: Message, file_id: int) -> boo
 
     async for session in db.get_session():
         file = await file_service.get_file(session, file_id)
-        if file is None or file.status != FileStatus.PUBLISHED:
+        if file is None or file.status != FileStatus.PUBLISHED.value:
             await message.answer(i18n.get(I18nKeys.FILES_DEEP_LINK_NOT_FOUND))
             return False
 
