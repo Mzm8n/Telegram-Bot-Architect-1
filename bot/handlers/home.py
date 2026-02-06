@@ -26,21 +26,23 @@ def build_home_keyboard(role: UserRole = UserRole.USER) -> InlineKeyboardMarkup:
             callback_data=CallbackPrefixes.SEARCH,
         )],
         [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.HOME_BTN_CONTRIBUTE),
-            callback_data=CallbackPrefixes.CONTRIBUTE,
-        )],
-        [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.HOME_BTN_ABOUT),
-            callback_data=CallbackPrefixes.ABOUT,
-        )],
-        [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.HOME_BTN_CONTACT),
-            callback_data=CallbackPrefixes.CONTACT,
-        )],
-        [InlineKeyboardButton(
             text=i18n.get(I18nKeys.HOME_BTN_TOOLS),
             callback_data=CallbackPrefixes.TOOLS,
         )],
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.HOME_BTN_CONTRIBUTE),
+            callback_data=CallbackPrefixes.CONTRIBUTE,
+        )],
+        [
+            InlineKeyboardButton(
+                text=i18n.get(I18nKeys.HOME_BTN_ABOUT),
+                callback_data=CallbackPrefixes.ABOUT,
+            ),
+            InlineKeyboardButton(
+                text=i18n.get(I18nKeys.HOME_BTN_CONTACT),
+                callback_data=CallbackPrefixes.CONTACT,
+            ),
+        ],
     ]
 
     if has_permission(role, Permission.VIEW_ADMIN_PANEL):
