@@ -2,6 +2,15 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { spawn } from "child_process";
+
+const botProcess = spawn("python", ["-u", "-m", "bot.main"], {
+  stdio: "inherit",
+  env: process.env as NodeJS.ProcessEnv,
+});
+botProcess.on("exit", (code) => {
+  console.log(`[bot] process exited with code ${code}`);
+});
 
 const app = express();
 const httpServer = createServer(app);

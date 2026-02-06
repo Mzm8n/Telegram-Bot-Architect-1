@@ -1,6 +1,7 @@
 import logging
 from typing import Optional, Tuple
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.models.user import User, UserRole
@@ -36,7 +37,16 @@ class UserService:
             username=username,
         )
         session.add(user)
-        await session.flush()
+        try:
+            await session.flush()
+        except IntegrityError:
+            await session.rollback()
+            stmt = select(User).where(User.id == user_id)
+            result = await session.execute(stmt)
+            user = result.scalar_one_or_none()
+            if user is not None:
+                return user, False
+            raise
         logger.info(LogMessages.USER_CREATED.format(user_id=user_id))
         return user, True
 
