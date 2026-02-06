@@ -23,7 +23,6 @@ from bot.modules.health_check import check_health
 from bot.handlers.home import (
     create_home_router,
     handle_home_callback,
-    handle_sections_callback,
     handle_search_callback,
     handle_contribute_callback,
     handle_about_callback,
@@ -31,6 +30,19 @@ from bot.handlers.home import (
     handle_tools_callback,
     handle_admin_panel_callback,
     handle_back_callback,
+)
+from bot.handlers.sections import (
+    create_sections_router,
+    handle_sections_callback,
+    handle_section_view_callback,
+    handle_section_back_callback,
+    handle_section_admin_add,
+    handle_section_admin_edit,
+    handle_section_admin_set_order,
+    handle_section_admin_delete,
+    handle_section_admin_confirm_delete,
+    handle_section_admin_cancel,
+    handle_section_skip_desc,
 )
 from bot.handlers.fallback import create_fallback_router
 from bot.core.constants import CallbackPrefixes
@@ -86,6 +98,15 @@ async def main() -> None:
 
     central_router.register(CallbackPrefixes.HOME, handle_home_callback)
     central_router.register(CallbackPrefixes.SECTIONS, handle_sections_callback)
+    central_router.register(CallbackPrefixes.SECTION_VIEW, handle_section_view_callback)
+    central_router.register(CallbackPrefixes.SECTION_BACK, handle_section_back_callback)
+    central_router.register(CallbackPrefixes.SECTION_ADMIN_ADD, handle_section_admin_add)
+    central_router.register(CallbackPrefixes.SECTION_ADMIN_EDIT, handle_section_admin_edit)
+    central_router.register(CallbackPrefixes.SECTION_ADMIN_SET_ORDER, handle_section_admin_set_order)
+    central_router.register(CallbackPrefixes.SECTION_ADMIN_DELETE, handle_section_admin_delete)
+    central_router.register(CallbackPrefixes.SECTION_ADMIN_CONFIRM_DELETE, handle_section_admin_confirm_delete)
+    central_router.register(CallbackPrefixes.SECTION_ADMIN_CANCEL, handle_section_admin_cancel)
+    central_router.register(CallbackPrefixes.SECTION_ADMIN_SKIP_DESC, handle_section_skip_desc)
     central_router.register(CallbackPrefixes.SEARCH, handle_search_callback)
     central_router.register(CallbackPrefixes.CONTRIBUTE, handle_contribute_callback)
     central_router.register(CallbackPrefixes.ABOUT, handle_about_callback)
@@ -96,6 +117,7 @@ async def main() -> None:
 
     dp.include_router(create_error_handler())
     dp.include_router(create_home_router())
+    dp.include_router(create_sections_router())
     dp.include_router(central_router.router)
     dp.include_router(create_fallback_router())
     logger.info(LogMessages.HANDLERS_REGISTERED)

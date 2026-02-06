@@ -142,10 +142,6 @@ async def handle_home_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) 
     await _send_home(callback, role)
 
 
-async def handle_sections_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
-    await _send_placeholder(callback, "sections", "sections")
-
-
 async def handle_search_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
     await _send_placeholder(callback, "search", "search")
 
