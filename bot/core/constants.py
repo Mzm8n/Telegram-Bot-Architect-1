@@ -35,12 +35,30 @@ class LogMessages:
 
     SERVICES_INITIALIZED = "All services initialized"
     MIDDLEWARES_REGISTERED = "All middlewares registered"
+    HANDLERS_REGISTERED = "All handlers registered"
+
+    START_COMMAND = "Start command from user {user_id}"
+    HOME_DISPLAYED = "Home displayed for user {user_id}"
+    BUTTON_PRESSED = "Button pressed: {button} by user {user_id}"
+    BACK_PRESSED = "Back pressed by user {user_id}"
+    UNKNOWN_TEXT = "Unknown text from user {user_id}"
 
 
 class ErrorMessages:
     DATABASE_NOT_INITIALIZED = "Database not initialized"
     I18N_NOT_INITIALIZED = "I18n service not initialized"
     STATE_NOT_INITIALIZED = "State service not initialized"
+
+
+class CallbackPrefixes:
+    HOME = "home"
+    SECTIONS = "sections"
+    SEARCH = "search"
+    CONTRIBUTE = "contribute"
+    ABOUT = "about"
+    CONTACT = "contact"
+    TOOLS = "tools"
+    BACK = "back"
 
 
 class I18nKeys:
@@ -52,13 +70,39 @@ class I18nKeys:
 
     LOGIN_NOTIFICATION = "login.notification"
 
+    HOME_WELCOME = "home.welcome"
+    HOME_BTN_SECTIONS = "home.btn.sections"
+    HOME_BTN_SEARCH = "home.btn.search"
+    HOME_BTN_CONTRIBUTE = "home.btn.contribute"
+    HOME_BTN_ABOUT = "home.btn.about"
+    HOME_BTN_CONTACT = "home.btn.contact"
+    HOME_BTN_TOOLS = "home.btn.tools"
+    HOME_BTN_BACK = "home.btn.back"
+
+    HOME_ABOUT_TEXT = "home.about.text"
+    HOME_CONTACT_TEXT = "home.contact.text"
+    HOME_PLACEHOLDER = "home.placeholder"
+    HOME_UNKNOWN_TEXT = "home.unknown_text"
+
 
 class DefaultTexts:
     TEXTS = {
-        "error.general": "عذراً، حدث خطأ غير متوقع. يرجى المحاولة لاحقاً.",
-        "error.blocked": "عذراً، تم حظرك من استخدام البوت.",
+        "error.general": "حدث خطأ غير متوقع. يرجى المحاولة لاحقاً.",
+        "error.blocked": "تم حظرك من استخدام البوت.",
         "error.subscription_required": "يجب الاشتراك في القناة أولاً للاستمرار.",
         "error.permission_denied": "ليس لديك صلاحية للقيام بهذا الإجراء.",
         "error.state_expired": "انتهت مهلة العملية. يرجى المحاولة مرة أخرى.",
         "login.notification": "تسجيل دخول جديد:\nالمعرف: {user_id}\nالاسم: {name}\nالوقت: {time}\nاسم المستخدم: {username}",
+        "home.welcome": "مرحباً {name}!\nاختر من القائمة:",
+        "home.btn.sections": "الأقسام",
+        "home.btn.search": "البحث",
+        "home.btn.contribute": "مساهمة بملف",
+        "home.btn.about": "عن البوت",
+        "home.btn.contact": "تواصل مع المطور",
+        "home.btn.tools": "أدوات وميزات",
+        "home.btn.back": "رجوع",
+        "home.about.text": "بوت المكتبة التعليمية الجامعية\nيتيح لك تصفح الأقسام والملفات والمساهمة بالمحتوى.",
+        "home.contact.text": "للتواصل مع المطور يرجى مراسلة الحساب التالي.",
+        "home.placeholder": "هذه الميزة قيد التطوير وستكون متاحة قريباً.",
+        "home.unknown_text": "لم أفهم رسالتك. يرجى استخدام الأزرار أدناه.",
     }

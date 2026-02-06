@@ -20,6 +20,19 @@ from bot.middlewares.user_tracking import UserTrackingMiddleware
 from bot.modules.central_router import central_router
 from bot.modules.error_handler import create_error_handler
 from bot.modules.health_check import check_health
+from bot.handlers.home import (
+    create_home_router,
+    handle_home_callback,
+    handle_sections_callback,
+    handle_search_callback,
+    handle_contribute_callback,
+    handle_about_callback,
+    handle_contact_callback,
+    handle_tools_callback,
+    handle_back_callback,
+)
+from bot.handlers.fallback import create_fallback_router
+from bot.core.constants import CallbackPrefixes
 
 
 async def main() -> None:
@@ -70,9 +83,20 @@ async def main() -> None:
     dp.update.outer_middleware(I18nMiddleware())
     logger.info(LogMessages.MIDDLEWARES_REGISTERED)
 
+    central_router.register(CallbackPrefixes.HOME, handle_home_callback)
+    central_router.register(CallbackPrefixes.SECTIONS, handle_sections_callback)
+    central_router.register(CallbackPrefixes.SEARCH, handle_search_callback)
+    central_router.register(CallbackPrefixes.CONTRIBUTE, handle_contribute_callback)
+    central_router.register(CallbackPrefixes.ABOUT, handle_about_callback)
+    central_router.register(CallbackPrefixes.CONTACT, handle_contact_callback)
+    central_router.register(CallbackPrefixes.TOOLS, handle_tools_callback)
+    central_router.register(CallbackPrefixes.BACK, handle_back_callback)
+
     dp.include_router(create_error_handler())
+    dp.include_router(create_home_router())
     dp.include_router(central_router.router)
-    logger.info(LogMessages.CENTRAL_ROUTER_REGISTERED)
+    dp.include_router(create_fallback_router())
+    logger.info(LogMessages.HANDLERS_REGISTERED)
 
     logger.info(LogMessages.BOT_READY)
 
