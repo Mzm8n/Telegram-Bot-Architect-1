@@ -43,11 +43,26 @@ class LogMessages:
     BACK_PRESSED = "Back pressed by user {user_id}"
     UNKNOWN_TEXT = "Unknown text from user {user_id}"
 
+    AUDIT_LOG_CREATED = "Audit log: user {user_id} action={action}"
+    PERMISSION_DENIED = "Permission denied for user {user_id}: {permission}"
+    ROLE_CHANGED = "Role changed for user {user_id}: {old_role} -> {new_role}"
+
 
 class ErrorMessages:
     DATABASE_NOT_INITIALIZED = "Database not initialized"
     I18N_NOT_INITIALIZED = "I18n service not initialized"
     STATE_NOT_INITIALIZED = "State service not initialized"
+
+
+class AuditActions:
+    ROLE_CHANGED = "role_changed"
+    USER_BLOCKED = "user_blocked"
+    USER_UNBLOCKED = "user_unblocked"
+    SETTING_CHANGED = "setting_changed"
+    SECTION_CREATED = "section_created"
+    SECTION_DELETED = "section_deleted"
+    FILE_UPLOADED = "file_uploaded"
+    FILE_DELETED = "file_deleted"
 
 
 class CallbackPrefixes:
@@ -59,6 +74,7 @@ class CallbackPrefixes:
     CONTACT = "contact"
     TOOLS = "tools"
     BACK = "back"
+    ADMIN_PANEL = "admin_panel"
 
 
 class I18nKeys:
@@ -79,10 +95,12 @@ class I18nKeys:
     HOME_BTN_TOOLS = "home.btn.tools"
     HOME_BTN_BACK = "home.btn.back"
 
+    HOME_BTN_ADMIN_PANEL = "home.btn.admin_panel"
     HOME_ABOUT_TEXT = "home.about.text"
     HOME_CONTACT_TEXT = "home.contact.text"
     HOME_PLACEHOLDER = "home.placeholder"
     HOME_UNKNOWN_TEXT = "home.unknown_text"
+    ADMIN_PANEL_TEXT = "admin.panel.text"
 
 
 class DefaultTexts:
@@ -105,4 +123,6 @@ class DefaultTexts:
         "home.contact.text": "للتواصل مع المطور يرجى مراسلة الحساب التالي.",
         "home.placeholder": "هذه الميزة قيد التطوير وستكون متاحة قريباً.",
         "home.unknown_text": "لم أفهم رسالتك. يرجى استخدام الأزرار أدناه.",
+        "home.btn.admin_panel": "لوحة التحكم",
+        "admin.panel.text": "لوحة التحكم الإدارية\nاختر من الخيارات أدناه:",
     }

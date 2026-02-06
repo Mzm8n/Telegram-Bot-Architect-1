@@ -8,13 +8,15 @@ from aiogram.filters import Command
 from bot.core.constants import LogMessages, I18nKeys, CallbackPrefixes
 from bot.services.i18n import get_i18n
 from bot.services.state import get_state_service
+from bot.services.permissions import has_permission, Permission
+from bot.models.user import UserRole
 
 logger = logging.getLogger("bot")
 
 
-def build_home_keyboard() -> InlineKeyboardMarkup:
+def build_home_keyboard(role: UserRole = UserRole.USER) -> InlineKeyboardMarkup:
     i18n = get_i18n()
-    return InlineKeyboardMarkup(inline_keyboard=[
+    buttons = [
         [InlineKeyboardButton(
             text=i18n.get(I18nKeys.HOME_BTN_SECTIONS),
             callback_data=CallbackPrefixes.SECTIONS,
@@ -39,7 +41,15 @@ def build_home_keyboard() -> InlineKeyboardMarkup:
             text=i18n.get(I18nKeys.HOME_BTN_TOOLS),
             callback_data=CallbackPrefixes.TOOLS,
         )],
-    ])
+    ]
+
+    if has_permission(role, Permission.VIEW_ADMIN_PANEL):
+        buttons.append([InlineKeyboardButton(
+            text=i18n.get(I18nKeys.HOME_BTN_ADMIN_PANEL),
+            callback_data=CallbackPrefixes.ADMIN_PANEL,
+        )])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 def build_back_keyboard() -> InlineKeyboardMarkup:
@@ -52,7 +62,7 @@ def build_back_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
-async def _send_home(callback: CallbackQuery) -> None:
+async def _send_home(callback: CallbackQuery, role: UserRole = UserRole.USER) -> None:
     if not callback.from_user or not callback.message:
         return
     user_id = callback.from_user.id
@@ -63,7 +73,7 @@ async def _send_home(callback: CallbackQuery) -> None:
     name = callback.from_user.first_name or ""
     welcome_text = i18n.get(I18nKeys.HOME_WELCOME, name=name)
 
-    await callback.message.edit_text(welcome_text, reply_markup=build_home_keyboard())  # type: ignore[union-attr]
+    await callback.message.edit_text(welcome_text, reply_markup=build_home_keyboard(role))  # type: ignore[union-attr]
     await callback.answer()
     logger.debug(LogMessages.HOME_DISPLAYED.format(user_id=user_id))
 
@@ -115,18 +125,21 @@ def create_home_router() -> Router:
         state_service = get_state_service()
         state_service.clear_state(user_id)
 
+        role = kwargs.get("user_role", UserRole.USER)
+
         i18n = get_i18n()
         name = message.from_user.first_name or ""
         welcome_text = i18n.get(I18nKeys.HOME_WELCOME, name=name)
 
-        await message.answer(welcome_text, reply_markup=build_home_keyboard())
+        await message.answer(welcome_text, reply_markup=build_home_keyboard(role))
         logger.debug(LogMessages.HOME_DISPLAYED.format(user_id=user_id))
 
     return router
 
 
 async def handle_home_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
-    await _send_home(callback)
+    role = kwargs.get("user_role", UserRole.USER)
+    await _send_home(callback, role)
 
 
 async def handle_sections_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
@@ -153,8 +166,17 @@ async def handle_tools_callback(callback: CallbackQuery, kwargs: Dict[str, Any])
     await _send_placeholder(callback, "tools", "tools")
 
 
+async def handle_admin_panel_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    from bot.services.permissions import check_permission_and_notify
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.VIEW_ADMIN_PANEL):
+        return
+    await _send_text_page(callback, "admin_panel", "admin_panel", I18nKeys.ADMIN_PANEL_TEXT)
+
+
 async def handle_back_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
     if not callback.from_user:
         return
     logger.info(LogMessages.BACK_PRESSED.format(user_id=callback.from_user.id))
-    await _send_home(callback)
+    role = kwargs.get("user_role", UserRole.USER)
+    await _send_home(callback, role)

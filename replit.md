@@ -15,21 +15,23 @@
 bot/
 ├── core/                    # النواة الأساسية
 │   ├── config.py            # إعدادات التطبيق
-│   ├── constants.py         # الثوابت المركزية (LogMessages, ErrorMessages, I18nKeys, DefaultTexts)
+│   ├── constants.py         # الثوابت المركزية (LogMessages, ErrorMessages, I18nKeys, DefaultTexts, AuditActions, CallbackPrefixes)
 │   ├── database.py          # اتصال قاعدة البيانات
 │   └── logging_config.py    # إعدادات التسجيل
 ├── handlers/                # معالجات الرسائل والأوامر
-│   ├── home.py              # واجهة المستخدم الرئيسية + أزرار التنقل
+│   ├── home.py              # واجهة المستخدم الرئيسية + أزرار التنقل + لوحة التحكم
 │   └── fallback.py          # معالج الرسائل النصية غير المعروفة
 ├── middlewares/             # الوسطاء
 │   ├── ban_check.py         # فحص الحظر
 │   ├── subscription_check.py # فحص الاشتراك الإجباري
-│   ├── role_check.py        # فحص الدور
+│   ├── role_check.py        # فحص الدور وتحميله في data["user_role"]
+│   ├── user_tracking.py     # تتبع المستخدمين
 │   └── i18n_middleware.py   # حقن خدمة النصوص
 ├── models/                  # نماذج قاعدة البيانات
 │   ├── user.py              # نموذج المستخدم (User, UserRole)
 │   ├── text_entry.py        # نموذج النصوص الديناميكية
-│   └── setting.py           # نموذج الإعدادات
+│   ├── setting.py           # نموذج الإعدادات
+│   └── audit_log.py         # نموذج سجل الإجراءات (AuditLog)
 ├── modules/                 # وحدات البوت
 │   ├── central_router.py    # التوجيه المركزي للأزرار
 │   ├── error_handler.py     # معالج الأخطاء العام
@@ -39,7 +41,9 @@ bot/
 │   ├── i18n.py              # خدمة النصوص الديناميكية
 │   ├── state.py             # إدارة الحالات
 │   ├── user.py              # خدمة المستخدمين
-│   └── seeder.py            # زراعة النصوص الافتراضية
+│   ├── seeder.py            # زراعة النصوص الافتراضية
+│   ├── permissions.py       # نظام الصلاحيات المركزي (Permission, ROLE_PERMISSIONS)
+│   └── audit.py             # خدمة سجل الإجراءات
 ├── utils/                   # أدوات مساعدة
 ├── migrations/              # هجرات Alembic
 │   ├── env.py
@@ -66,6 +70,25 @@ bot/
 | `users` | بيانات المستخدمين والأدوار والحظر |
 | `text_entries` | النصوص الديناميكية (I18n) |
 | `settings` | إعدادات النظام |
+| `audit_logs` | سجل الإجراءات الإدارية (من، ماذا، متى) |
+
+## نظام الأدوار والصلاحيات
+| الدور | الصلاحيات |
+|-------|-----------|
+| `user` | تصفح الواجهة فقط (browse) |
+| `moderator` | تصفح + رفع ملفات (browse, upload_file) |
+| `admin` | تحكم كامل (browse, upload_file, manage_sections, manage_files, manage_users, manage_settings, view_audit_log, view_admin_panel) |
+
+### آلية فحص الصلاحيات
+- `permissions.py` يحتوي على `Permission` (ثوابت الصلاحيات) و`ROLE_PERMISSIONS` (ربط الأدوار بالصلاحيات)
+- `has_permission(role, permission)` للفحص البرمجي
+- `check_permission_and_notify(callback, role, permission)` للفحص مع إرسال رسالة رفض
+- الأزرار الإدارية تُخفى تلقائياً حسب الدور في `build_home_keyboard(role)`
+
+### سجل الإجراءات (Audit Log)
+- `AuditActions` في `constants.py` يحتوي على أنواع الإجراءات
+- `audit_service.log_action(session, user_id, action, details)` لتسجيل أي إجراء
+- يُستخدم في المراحل اللاحقة عند تنفيذ الإجراءات الإدارية الفعلية
 
 ## أوامر Alembic
 ```bash
@@ -87,14 +110,16 @@ python -m bot.main
 - **CallbackPrefixes**: جميع بادئات الأزرار في `constants.py`
 - **الحالات**: حالة واحدة لكل مستخدم مع مهلة زمنية قابلة للتكوين
 - **التوجيه المركزي**: جميع callbacks تمر عبر CentralRouter
+- **الصلاحيات**: فحص مركزي عبر `permissions.py` قبل أي إجراء إداري
+- **سجل الإجراءات**: تسجيل كل إجراء إداري في `audit_logs`
 
 ## المراحل المكتملة
 - [x] المرحلة 0: التهيئة
 - [x] المرحلة 1: النواة + النصوص الديناميكية
 - [x] المرحلة 2: واجهة المستخدم الرئيسية
+- [x] المرحلة 3: وحدة الصلاحيات
 
 ## المراحل القادمة
-- [ ] المرحلة 3: الصلاحيات
 - [ ] المرحلة 4: وحدة الأقسام
 - [ ] المرحلة 5: وحدة الملفات
 - [ ] المرحلة 6: البحث
