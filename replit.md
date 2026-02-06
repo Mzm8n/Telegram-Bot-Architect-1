@@ -13,21 +13,37 @@
 ## هيكل المشروع
 ```
 bot/
-├── core/           # النواة الأساسية
-│   ├── config.py   # إعدادات التطبيق
-│   ├── database.py # اتصال قاعدة البيانات
-│   └── logging_config.py  # إعدادات التسجيل
-├── handlers/       # معالجات الرسائل والأوامر
-├── middlewares/    # الوسطاء
-├── models/         # نماذج قاعدة البيانات
-├── modules/        # وحدات البوت
-├── services/       # طبقة الخدمات
-├── utils/          # أدوات مساعدة
-├── migrations/     # هجرات Alembic
+├── core/                    # النواة الأساسية
+│   ├── config.py            # إعدادات التطبيق
+│   ├── constants.py         # الثوابت المركزية (LogMessages, ErrorMessages, I18nKeys, DefaultTexts)
+│   ├── database.py          # اتصال قاعدة البيانات
+│   └── logging_config.py    # إعدادات التسجيل
+├── handlers/                # معالجات الرسائل والأوامر
+├── middlewares/             # الوسطاء
+│   ├── ban_check.py         # فحص الحظر
+│   ├── subscription_check.py # فحص الاشتراك الإجباري
+│   ├── role_check.py        # فحص الدور
+│   └── i18n_middleware.py   # حقن خدمة النصوص
+├── models/                  # نماذج قاعدة البيانات
+│   ├── user.py              # نموذج المستخدم (User, UserRole)
+│   ├── text_entry.py        # نموذج النصوص الديناميكية
+│   └── setting.py           # نموذج الإعدادات
+├── modules/                 # وحدات البوت
+│   ├── central_router.py    # التوجيه المركزي للأزرار
+│   ├── error_handler.py     # معالج الأخطاء العام
+│   ├── health_check.py      # فحص جاهزية النظام
+│   └── login_logger.py      # تسجيل دخول المستخدمين
+├── services/                # طبقة الخدمات
+│   ├── i18n.py              # خدمة النصوص الديناميكية
+│   ├── state.py             # إدارة الحالات
+│   ├── user.py              # خدمة المستخدمين
+│   └── seeder.py            # زراعة النصوص الافتراضية
+├── utils/                   # أدوات مساعدة
+├── migrations/              # هجرات Alembic
 │   ├── env.py
 │   ├── script.py.mako
-│   └── versions/   # ملفات الهجرات
-└── main.py         # نقطة التشغيل
+│   └── versions/            # ملفات الهجرات
+└── main.py                  # نقطة التشغيل
 ```
 
 ## المتغيرات البيئية
@@ -36,20 +52,25 @@ bot/
 | `BOT_TOKEN` | توكن البوت من BotFather |
 | `DATABASE_URL` | رابط اتصال PostgreSQL |
 | `DEBUG` | وضع التصحيح (true/false) |
+| `LOG_CHANNEL_ID` | معرف قناة المراقبة (0 = معطل) |
+| `SUBSCRIPTION_ENABLED` | تفعيل الاشتراك الإجباري (true/false) |
+| `SUBSCRIPTION_CHANNEL_IDS` | معرفات القنوات المطلوبة (مفصولة بفواصل) |
+| `STATE_TIMEOUT_SECONDS` | مهلة انتهاء الحالة بالثواني (افتراضي: 300) |
+| `DEFAULT_LANGUAGE` | اللغة الافتراضية (افتراضي: ar) |
+
+## جداول قاعدة البيانات
+| الجدول | الوصف |
+|--------|-------|
+| `users` | بيانات المستخدمين والأدوار والحظر |
+| `text_entries` | النصوص الديناميكية (I18n) |
+| `settings` | إعدادات النظام |
 
 ## أوامر Alembic
 ```bash
-# عرض الحالة الحالية
-alembic current
-
-# تطبيق جميع الهجرات
-alembic upgrade head
-
-# إنشاء هجرة جديدة
-alembic revision -m "description"
-
-# التراجع عن آخر هجرة
-alembic downgrade -1
+alembic current          # عرض الحالة الحالية
+alembic upgrade head     # تطبيق جميع الهجرات
+alembic revision -m "x"  # إنشاء هجرة جديدة
+alembic downgrade -1     # التراجع عن آخر هجرة
 ```
 
 ## تشغيل البوت
@@ -57,11 +78,18 @@ alembic downgrade -1
 python -m bot.main
 ```
 
+## البنية المعمارية
+- **النصوص**: جميع النصوص الموجهة للمستخدم في جدول `text_entries` عبر I18nService
+- **النصوص الداخلية**: جميع رسائل الـ logging والأخطاء في `constants.py`
+- **الوسطاء**: يُنفذون بالترتيب: حظر → اشتراك → دور → I18n
+- **الحالات**: حالة واحدة لكل مستخدم مع مهلة زمنية قابلة للتكوين
+- **التوجيه المركزي**: جميع callbacks تمر عبر CentralRouter
+
 ## المراحل المكتملة
 - [x] المرحلة 0: التهيئة
+- [x] المرحلة 1: النواة + النصوص الديناميكية
 
 ## المراحل القادمة
-- [ ] المرحلة 1: النواة + النصوص الديناميكية
 - [ ] المرحلة 2: واجهة المستخدم
 - [ ] المرحلة 3: الصلاحيات
 - [ ] المرحلة 4: وحدة الأقسام

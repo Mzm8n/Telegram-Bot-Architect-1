@@ -12,7 +12,10 @@ class Database:
         async_url = url.replace("postgresql://", "postgresql+asyncpg://")
         if not async_url.startswith("postgresql+asyncpg://"):
             async_url = f"postgresql+asyncpg://{url.split('://')[-1]}"
-        
+
+        if "?" in async_url:
+            async_url = async_url.split("?")[0]
+
         self.engine = create_async_engine(
             async_url,
             echo=False,
