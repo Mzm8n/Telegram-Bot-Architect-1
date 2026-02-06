@@ -63,6 +63,7 @@ def _build_section_detail_keyboard(
     section: Section,
     children: List[Section],
     role: UserRole,
+    file_count: int = 0,
 ) -> InlineKeyboardMarkup:
     i18n = get_i18n()
     buttons: List[List[InlineKeyboardButton]] = []
@@ -72,6 +73,14 @@ def _build_section_detail_keyboard(
             text=child.name,
             callback_data=f"{CallbackPrefixes.SECTION_VIEW}{child.id}",
         )])
+
+    files_label = i18n.get(I18nKeys.FILES_TITLE).rstrip(":")
+    if file_count > 0:
+        files_label = f"{files_label} ({file_count})"
+    buttons.append([InlineKeyboardButton(
+        text=files_label,
+        callback_data=f"{CallbackPrefixes.FILE_PAGE}{section.id}:1",
+    )])
 
     if has_permission(role, Permission.MANAGE_SECTIONS):
         pid = section.id
@@ -146,6 +155,7 @@ async def _show_section_detail(
     db = await get_db()
     section: Optional[Section] = None
     children: List[Section] = []
+    file_count = 0
 
     async for session in db.get_session():
         section = await section_service.get_section(session, section_id)
@@ -153,6 +163,9 @@ async def _show_section_detail(
             await callback.answer(i18n.get(I18nKeys.SECTION_ADMIN_NOT_FOUND), show_alert=True)
             return
         children = await section_service.list_sections(session, parent_id=section_id)
+
+        from bot.services.files import file_service as _fs
+        file_count = await _fs.count_files_by_section(session, section_id)
 
     if section is None:
         return
@@ -164,7 +177,7 @@ async def _show_section_detail(
     if not children:
         text += f"\n\n{i18n.get(I18nKeys.SECTIONS_EMPTY)}"
 
-    keyboard = _build_section_detail_keyboard(section, children, role)
+    keyboard = _build_section_detail_keyboard(section, children, role, file_count=file_count)
 
     logger.debug(LogMessages.SECTION_VIEWED.format(
         section_id=section_id, user_id=callback.from_user.id

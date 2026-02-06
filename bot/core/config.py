@@ -10,6 +10,7 @@ load_dotenv()
 class BotConfig:
     token: str
     log_channel_id: int
+    storage_channel_id: int
 
 
 @dataclass
@@ -48,6 +49,7 @@ def load_config() -> Config:
         bot=BotConfig(
             token=os.getenv("BOT_TOKEN", ""),
             log_channel_id=int(os.getenv("LOG_CHANNEL_ID", "0")),
+            storage_channel_id=int(os.getenv("STORAGE_CHANNEL_ID", "0")),
         ),
         database=DatabaseConfig(
             url=os.getenv("DATABASE_URL", ""),

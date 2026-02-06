@@ -127,6 +127,19 @@ def create_home_router() -> Router:
 
         role = kwargs.get("user_role", UserRole.USER)
 
+        payload = message.text.split(maxsplit=1)[1] if message.text and len(message.text.split()) > 1 else ""
+
+        if payload.startswith("file_"):
+            try:
+                file_id = int(payload.replace("file_", ""))
+                from bot.handlers.files import handle_deep_link_file
+                bot = message.bot
+                if bot:
+                    await handle_deep_link_file(bot, message, file_id)
+                    return
+            except (ValueError, IndexError):
+                pass
+
         i18n = get_i18n()
         name = message.from_user.first_name or ""
         welcome_text = i18n.get(I18nKeys.HOME_WELCOME, name=name)

@@ -19,8 +19,9 @@ bot/
 │   ├── database.py          # اتصال قاعدة البيانات
 │   └── logging_config.py    # إعدادات التسجيل
 ├── handlers/                # معالجات الرسائل والأوامر
-│   ├── home.py              # واجهة المستخدم الرئيسية + أزرار التنقل + لوحة التحكم
+│   ├── home.py              # واجهة المستخدم الرئيسية + أزرار التنقل + لوحة التحكم + deep linking
 │   ├── sections.py          # عرض الأقسام + إدارة الأقسام (admin FSM)
+│   ├── files.py             # رفع/عرض/حذف الملفات + FSM + pagination + deep linking
 │   └── fallback.py          # معالج الرسائل النصية غير المعروفة
 ├── middlewares/             # الوسطاء
 │   ├── ban_check.py         # فحص الحظر
@@ -33,7 +34,9 @@ bot/
 │   ├── text_entry.py        # نموذج النصوص الديناميكية
 │   ├── setting.py           # نموذج الإعدادات
 │   ├── audit_log.py         # نموذج سجل الإجراءات (AuditLog)
-│   └── section.py           # نموذج القسم (Section)
+│   ├── section.py           # نموذج القسم (Section)
+│   ├── file.py              # نموذج الملف (File, FileType, FileStatus)
+│   └── file_section.py      # جدول الربط ملف-قسم (many-to-many)
 ├── modules/                 # وحدات البوت
 │   ├── central_router.py    # التوجيه المركزي للأزرار
 │   ├── error_handler.py     # معالج الأخطاء العام
@@ -46,7 +49,8 @@ bot/
 │   ├── seeder.py            # زراعة النصوص الافتراضية
 │   ├── permissions.py       # نظام الصلاحيات المركزي (Permission, ROLE_PERMISSIONS)
 │   ├── audit.py             # خدمة سجل الإجراءات
-│   └── sections.py          # خدمة الأقسام (CRUD + ترتيب + تداخل)
+│   ├── sections.py          # خدمة الأقسام (CRUD + ترتيب + تداخل)
+│   └── files.py             # خدمة الملفات (CRUD + ربط بالأقسام + كشف التكرار)
 ├── utils/                   # أدوات مساعدة
 ├── migrations/              # هجرات Alembic
 │   ├── env.py
@@ -65,6 +69,7 @@ bot/
 | `SUBSCRIPTION_ENABLED` | تفعيل الاشتراك الإجباري (true/false) |
 | `SUBSCRIPTION_CHANNEL_IDS` | معرفات القنوات المطلوبة (مفصولة بفواصل) |
 | `STATE_TIMEOUT_SECONDS` | مهلة انتهاء الحالة بالثواني (افتراضي: 300) |
+| `STORAGE_CHANNEL_ID` | معرف قناة التخزين للملفات (0 = معطل) |
 | `DEFAULT_LANGUAGE` | اللغة الافتراضية (افتراضي: ar) |
 
 ## جداول قاعدة البيانات
@@ -75,6 +80,8 @@ bot/
 | `settings` | إعدادات النظام |
 | `audit_logs` | سجل الإجراءات الإدارية (من، ماذا، متى) |
 | `sections` | الأقسام المتداخلة (اسم، وصف، parent_id، ترتيب، حالة) |
+| `files` | الملفات (file_id, file_unique_id, name, type, size, status, uploaded_by) |
+| `file_sections` | ربط الملفات بالأقسام (many-to-many) |
 
 ## نظام الأدوار والصلاحيات
 | الدور | الصلاحيات |
@@ -92,7 +99,7 @@ bot/
 ### سجل الإجراءات (Audit Log)
 - `AuditActions` في `constants.py` يحتوي على أنواع الإجراءات
 - `audit_service.log_action(session, user_id, action, details)` لتسجيل أي إجراء
-- يُستخدم فعلياً في إدارة الأقسام (إنشاء، تعديل، حذف)
+- يُستخدم فعلياً في إدارة الأقسام والملفات (إنشاء، تعديل، حذف)
 
 ## وحدة الأقسام (المرحلة 4)
 
@@ -127,6 +134,48 @@ bot/
 2. يكتب الاسم → state = section_add_desc
 3. يكتب الوصف أو يضغط "تخطي" → يُنشأ القسم + audit log
 
+## وحدة الملفات (المرحلة 5)
+
+### نموذج البيانات
+- `File`: id, file_id (telegram), file_unique_id, name, file_type (enum), file_size, status (enum), uploaded_by, is_active, created_at
+- `FileSection`: file_id + section_id (جدول ربط many-to-many)
+- `FileType`: DOCUMENT, PHOTO, VIDEO, AUDIO, VOICE, VIDEO_NOTE, ANIMATION, STICKER
+- `FileStatus`: PENDING, PUBLISHED
+- كشف التكرار عبر file_unique_id
+- الحذف منطقي (is_active = False)
+
+### بادئات الأزرار (Callback Prefixes)
+| البادئة | الاستخدام |
+|---------|-----------|
+| `file:{id}` | عرض/إرسال ملف |
+| `fpage:{section_id}:{page}` | تصفح صفحات الملفات |
+| `f_up:{section_id}` | بدء رفع ملفات |
+| `f_del:{id}` | حذف ملف |
+| `f_cdel:{id}` | تأكيد حذف ملف |
+| `f_done` | إنهاء جلسة الرفع |
+| `f_cancel` | إلغاء جلسة الرفع |
+
+### حالة FSM للرفع
+| الحالة | الوصف |
+|--------|-------|
+| `file_upload` | انتظار ملفات من المستخدم (section_id, uploaded_count في state_data) |
+
+### تدفق رفع الملفات
+1. مشرف/أدمن يضغط "رفع ملفات" في قسم → state = file_upload
+2. يرسل ملفات (واحد أو عدة) → كل ملف يُحفظ ويُربط بالقسم
+3. يضغط "انتهيت" أو "إلغاء" → ملخص أو إلغاء
+4. الملفات تُحول لقناة التخزين (STORAGE_CHANNEL_ID) وfile_id يُحفظ
+5. كشف التكرار: إذا وُجد ملف بنفس file_unique_id يُربط بالقسم الحالي بدلاً من إعادة الرفع
+
+### Deep Linking
+- رابط مباشر للملف: `t.me/bot?start=file_<id>`
+- يُعالج في /start handler ويرسل الملف مباشرة للمستخدم
+
+### التصفح المُقسّم (Pagination)
+- 5 ملفات لكل صفحة
+- أزرار التنقل (السابق/التالي) مع رقم الصفحة
+- أزرار إدارية (رفع/حذف) تظهر حسب الصلاحيات
+
 ## أوامر Alembic
 ```bash
 alembic current          # عرض الحالة الحالية
@@ -149,7 +198,7 @@ python -m bot.main
 - **التوجيه المركزي**: جميع callbacks تمر عبر CentralRouter
 - **الصلاحيات**: فحص مركزي عبر `permissions.py` قبل أي إجراء إداري
 - **سجل الإجراءات**: تسجيل كل إجراء إداري في `audit_logs`
-- **ترتيب الراوترات**: home → sections → central → fallback (sections قبل fallback لالتقاط رسائل FSM)
+- **ترتيب الراوترات**: home → files → sections → central → fallback (files قبل sections لالتقاط رسائل FSM)
 
 ## المراحل المكتملة
 - [x] المرحلة 0: التهيئة
@@ -157,9 +206,9 @@ python -m bot.main
 - [x] المرحلة 2: واجهة المستخدم الرئيسية
 - [x] المرحلة 3: وحدة الصلاحيات
 - [x] المرحلة 4: وحدة الأقسام
+- [x] المرحلة 5: وحدة الملفات
 
 ## المراحل القادمة
-- [ ] المرحلة 5: وحدة الملفات
 - [ ] المرحلة 6: البحث
 - [ ] المرحلة 7: لوحة الأدمن
 - [ ] المرحلة 8: وحدة المساهمات

@@ -52,6 +52,17 @@ class LogMessages:
     SECTION_SOFT_DELETED = "Section soft deleted: id={section_id} name={name}"
     SECTION_VIEWED = "Section viewed: id={section_id} by user {user_id}"
 
+    FILE_CREATED = "File created: id={file_id} name={name} by user {user_id}"
+    FILE_DUPLICATE = "Duplicate file detected: unique_id={file_unique_id}"
+    FILE_LINKED = "File {file_id} linked to section {section_id}"
+    FILE_UNLINKED = "File {file_id} unlinked from section {section_id}"
+    FILE_SENT = "File {file_id} sent to user {user_id}"
+    FILE_FORWARDED = "File forwarded to storage channel: {file_id}"
+    FILE_SOFT_DELETED = "File soft deleted: id={file_id} name={name}"
+    MEDIA_GROUP_RECEIVED = "Media group received: {count} files from user {user_id}"
+    DEEP_LINK = "Deep link: user {user_id} requested file {file_id}"
+    STORAGE_CHANNEL_NOT_SET = "STORAGE_CHANNEL_ID not set - file storage disabled"
+
 
 class ErrorMessages:
     DATABASE_NOT_INITIALIZED = "Database not initialized"
@@ -69,6 +80,8 @@ class AuditActions:
     SECTION_DELETED = "section_deleted"
     FILE_UPLOADED = "file_uploaded"
     FILE_DELETED = "file_deleted"
+    FILE_LINKED = "file_linked"
+    FILE_UNLINKED = "file_unlinked"
 
 
 class CallbackPrefixes:
@@ -83,6 +96,16 @@ class CallbackPrefixes:
     SECTION_ADMIN_SET_ORDER = "sec_ord:"
     SECTION_ADMIN_CANCEL = "sec_cancel"
     SECTION_ADMIN_SKIP_DESC = "sec_skip_desc"
+    FILE_VIEW = "file:"
+    FILE_PAGE = "fpage:"
+    FILE_UPLOAD = "f_up:"
+    FILE_DELETE = "f_del:"
+    FILE_CONFIRM_DELETE = "f_cdel:"
+    FILE_LINK = "f_link:"
+    FILE_UNLINK = "f_unlink:"
+    FILE_CANCEL = "f_cancel"
+    FILE_DONE = "f_done"
+    FILE_PUBLISH = "f_pub:"
     SEARCH = "search"
     CONTRIBUTE = "contribute"
     ABOUT = "about"
@@ -142,6 +165,34 @@ class I18nKeys:
     SECTION_ADMIN_ENTER_NEW_NAME = "section.admin.enter_new_name"
     SECTION_ADMIN_INVALID_ORDER = "section.admin.invalid_order"
 
+    FILES_TITLE = "files.title"
+    FILES_EMPTY = "files.empty"
+    FILES_BTN_UPLOAD = "files.btn.upload"
+    FILES_BTN_DELETE = "files.btn.delete"
+    FILES_BTN_CONFIRM_DELETE = "files.btn.confirm_delete"
+    FILES_BTN_CANCEL = "files.btn.cancel"
+    FILES_BTN_LINK = "files.btn.link"
+    FILES_BTN_UNLINK = "files.btn.unlink"
+    FILES_BTN_DONE = "files.btn.done"
+    FILES_UPLOAD_PROMPT = "files.upload.prompt"
+    FILES_UPLOAD_SUCCESS = "files.upload.success"
+    FILES_UPLOAD_COUNT = "files.upload.count"
+    FILES_UPLOAD_DUPLICATE = "files.upload.duplicate"
+    FILES_UPLOAD_ERROR = "files.upload.error"
+    FILES_DELETE_CONFIRM = "files.delete.confirm"
+    FILES_DELETED = "files.deleted"
+    FILES_NOT_FOUND = "files.not_found"
+    FILES_SENT = "files.sent"
+    FILES_LINKED = "files.linked"
+    FILES_UNLINKED = "files.unlinked"
+    FILES_ALREADY_LINKED = "files.already_linked"
+    FILES_CANCELLED = "files.cancelled"
+    FILES_STORAGE_NOT_SET = "files.storage_not_set"
+    FILES_PAGE_INFO = "files.page_info"
+    FILES_PAGE_PREV = "files.page_prev"
+    FILES_PAGE_NEXT = "files.page_next"
+    FILES_DEEP_LINK_NOT_FOUND = "files.deep_link.not_found"
+
 
 class DefaultTexts:
     TEXTS = {
@@ -188,4 +239,31 @@ class DefaultTexts:
         "section.admin.has_children": "لا يمكن حذف القسم لأنه يحتوي على أقسام فرعية.",
         "section.admin.enter_new_name": "أدخل الاسم الجديد للقسم:",
         "section.admin.invalid_order": "يرجى إدخال رقم صحيح للترتيب.",
+        "files.title": "الملفات المتاحة:",
+        "files.empty": "لا توجد ملفات في هذا القسم.",
+        "files.btn.upload": "رفع ملف",
+        "files.btn.delete": "حذف الملف",
+        "files.btn.confirm_delete": "تأكيد حذف الملف",
+        "files.btn.cancel": "إلغاء",
+        "files.btn.link": "ربط بقسم آخر",
+        "files.btn.unlink": "فك الربط",
+        "files.btn.done": "تم الانتهاء",
+        "files.upload.prompt": "أرسل الملف أو الملفات المراد رفعها.\nيمكنك إرسال عدة ملفات دفعة واحدة.\nاضغط «تم» عند الانتهاء.",
+        "files.upload.success": "تم رفع الملف بنجاح: {name}",
+        "files.upload.count": "تم رفع {count} ملف بنجاح.",
+        "files.upload.duplicate": "هذا الملف موجود مسبقاً وتم ربطه بالقسم.",
+        "files.upload.error": "حدث خطأ أثناء رفع الملف.",
+        "files.delete.confirm": "هل أنت متأكد من حذف الملف «{name}»؟",
+        "files.deleted": "تم حذف الملف بنجاح.",
+        "files.not_found": "الملف غير موجود.",
+        "files.sent": "تم إرسال الملف.",
+        "files.linked": "تم ربط الملف بالقسم بنجاح.",
+        "files.unlinked": "تم فك ربط الملف من القسم.",
+        "files.already_linked": "الملف مربوط بهذا القسم مسبقاً.",
+        "files.cancelled": "تم إلغاء العملية.",
+        "files.storage_not_set": "قناة التخزين غير مُعدة. تواصل مع المسؤول.",
+        "files.page_info": "صفحة {page} من {total}",
+        "files.page_prev": "السابق",
+        "files.page_next": "التالي",
+        "files.deep_link.not_found": "الملف المطلوب غير موجود أو تم حذفه.",
     }

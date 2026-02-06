@@ -44,6 +44,17 @@ from bot.handlers.sections import (
     handle_section_admin_cancel,
     handle_section_skip_desc,
 )
+from bot.handlers.files import (
+    create_files_router,
+    set_storage_channel_id,
+    handle_file_upload_start,
+    handle_file_done,
+    handle_file_cancel,
+    handle_file_view,
+    handle_file_delete,
+    handle_file_confirm_delete,
+    handle_file_page,
+)
 from bot.handlers.fallback import create_fallback_router
 from bot.core.constants import CallbackPrefixes
 
@@ -69,6 +80,12 @@ async def main() -> None:
         await i18n.load_texts(session)
 
     init_state_service(timeout_seconds=config.state.timeout_seconds)
+
+    if config.bot.storage_channel_id != 0:
+        set_storage_channel_id(config.bot.storage_channel_id)
+    else:
+        logger.warning(LogMessages.STORAGE_CHANNEL_NOT_SET)
+
     logger.info(LogMessages.SERVICES_INITIALIZED)
 
     if not config.bot.token:
@@ -107,6 +124,13 @@ async def main() -> None:
     central_router.register(CallbackPrefixes.SECTION_ADMIN_CONFIRM_DELETE, handle_section_admin_confirm_delete)
     central_router.register(CallbackPrefixes.SECTION_ADMIN_CANCEL, handle_section_admin_cancel)
     central_router.register(CallbackPrefixes.SECTION_ADMIN_SKIP_DESC, handle_section_skip_desc)
+    central_router.register(CallbackPrefixes.FILE_VIEW, handle_file_view)
+    central_router.register(CallbackPrefixes.FILE_PAGE, handle_file_page)
+    central_router.register(CallbackPrefixes.FILE_UPLOAD, handle_file_upload_start)
+    central_router.register(CallbackPrefixes.FILE_DELETE, handle_file_delete)
+    central_router.register(CallbackPrefixes.FILE_CONFIRM_DELETE, handle_file_confirm_delete)
+    central_router.register(CallbackPrefixes.FILE_DONE, handle_file_done)
+    central_router.register(CallbackPrefixes.FILE_CANCEL, handle_file_cancel)
     central_router.register(CallbackPrefixes.SEARCH, handle_search_callback)
     central_router.register(CallbackPrefixes.CONTRIBUTE, handle_contribute_callback)
     central_router.register(CallbackPrefixes.ABOUT, handle_about_callback)
@@ -117,6 +141,7 @@ async def main() -> None:
 
     dp.include_router(create_error_handler())
     dp.include_router(create_home_router())
+    dp.include_router(create_files_router())
     dp.include_router(create_sections_router())
     dp.include_router(central_router.router)
     dp.include_router(create_fallback_router())
