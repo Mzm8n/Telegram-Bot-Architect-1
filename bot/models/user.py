@@ -21,7 +21,7 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(String(255))
     last_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     username: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    role: Mapped[UserRole] = mapped_column(SAEnum(UserRole, name="user_role", create_constraint=False), default=UserRole.USER)
+    role: Mapped[UserRole] = mapped_column(SAEnum(UserRole, name="user_role", create_constraint=False, values_callable=lambda x: [e.value for e in x]), default=UserRole.USER)
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
     language: Mapped[str] = mapped_column(String(10), default="ar")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
