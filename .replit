@@ -38,3 +38,14 @@ author = "agent"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
+
+[userenv]
+
+[userenv.shared]
+STORAGE_CHANNEL_ID = "-1001526470188"
+ADMIN_USER_ID = "1409184680"
+SUBSCRIPTION_ENABLED = "false"
+LOG_CHANNEL_ID = "0"
+STATE_TIMEOUT_SECONDS = "300"
+DEFAULT_LANGUAGE = "ar"
+DEBUG = "false"
