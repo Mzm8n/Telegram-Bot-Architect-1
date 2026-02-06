@@ -8,7 +8,7 @@ from bot.core.constants import LogMessages, I18nKeys, CallbackPrefixes, AuditAct
 from bot.core.database import get_db
 from bot.services.i18n import get_i18n
 from bot.services.state import get_state_service
-from bot.services.files import file_service, FILES_PER_PAGE
+from bot.services.files import file_service, send_file_to_user, FILES_PER_PAGE
 from bot.services.audit import audit_service
 from bot.services.permissions import has_permission, check_permission_and_notify, Permission
 from bot.models.user import UserRole
@@ -117,27 +117,7 @@ async def _forward_to_storage(bot: Bot, message: Message) -> Optional[str]:
 
 
 async def _send_file_to_user(bot: Bot, chat_id: int, file: File) -> bool:
-    try:
-        if file.file_type == "photo":
-            await bot.send_photo(chat_id=chat_id, photo=file.file_id, caption=file.caption)
-        elif file.file_type == "video":
-            await bot.send_video(chat_id=chat_id, video=file.file_id, caption=file.caption)
-        elif file.file_type == "audio":
-            await bot.send_audio(chat_id=chat_id, audio=file.file_id, caption=file.caption)
-        elif file.file_type == "voice":
-            await bot.send_voice(chat_id=chat_id, voice=file.file_id, caption=file.caption)
-        elif file.file_type == "video_note":
-            await bot.send_video_note(chat_id=chat_id, video_note=file.file_id)
-        elif file.file_type == "animation":
-            await bot.send_animation(chat_id=chat_id, animation=file.file_id, caption=file.caption)
-        elif file.file_type == "sticker":
-            await bot.send_sticker(chat_id=chat_id, sticker=file.file_id)
-        else:
-            await bot.send_document(chat_id=chat_id, document=file.file_id, caption=file.caption)
-        return True
-    except Exception as e:
-        logger.error(f"Failed to send file {file.id}: {e}")
-        return False
+    return await send_file_to_user(bot, chat_id, file)
 
 
 def _build_file_list_keyboard(

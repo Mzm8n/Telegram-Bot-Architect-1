@@ -1,7 +1,8 @@
+import asyncio
 import logging
 from typing import Any, Dict, List, Optional
 
-from aiogram import Router
+from aiogram import Bot, Router
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
 from bot.core.constants import LogMessages, I18nKeys, CallbackPrefixes, AuditActions
@@ -9,10 +10,12 @@ from bot.core.database import get_db
 from bot.services.i18n import get_i18n
 from bot.services.state import get_state_service
 from bot.services.sections import section_service
+from bot.services.files import file_service, send_file_to_user
 from bot.services.audit import audit_service
 from bot.services.permissions import has_permission, check_permission_and_notify, Permission
 from bot.models.user import UserRole
 from bot.models.section import Section
+from bot.models.file import File
 
 logger = logging.getLogger("bot")
 
@@ -143,6 +146,21 @@ async def _show_sections_list(
     await callback.answer()
 
 
+async def _send_section_files(
+    bot: Bot,
+    chat_id: int,
+    files: List[File],
+) -> int:
+    sent = 0
+    for i, f in enumerate(files):
+        success = await send_file_to_user(bot, chat_id, f)
+        if success:
+            sent += 1
+        if i < len(files) - 1:
+            await asyncio.sleep(0.15)
+    return sent
+
+
 async def _show_section_detail(
     callback: CallbackQuery,
     section_id: int,
@@ -156,6 +174,7 @@ async def _show_section_detail(
     section: Optional[Section] = None
     children: List[Section] = []
     file_count = 0
+    all_files: List[File] = []
 
     async for session in db.get_session():
         section = await section_service.get_section(session, section_id)
@@ -163,9 +182,9 @@ async def _show_section_detail(
             await callback.answer(i18n.get(I18nKeys.SECTION_ADMIN_NOT_FOUND), show_alert=True)
             return
         children = await section_service.list_sections(session, parent_id=section_id)
-
-        from bot.services.files import file_service as _fs
-        file_count = await _fs.count_files_by_section(session, section_id)
+        file_count = await file_service.count_files_by_section(session, section_id)
+        if file_count > 0:
+            all_files = await file_service.list_all_files_by_section(session, section_id)
 
     if section is None:
         return
@@ -182,6 +201,15 @@ async def _show_section_detail(
 
     await callback.message.edit_text(text, reply_markup=keyboard)  # type: ignore[union-attr]
     await callback.answer()
+
+    bot = callback.bot
+    if bot is None:
+        return
+
+    if all_files:
+        await _send_section_files(bot, callback.from_user.id, all_files)
+    elif file_count == 0 and not children:
+        await bot.send_message(callback.from_user.id, i18n.get(I18nKeys.FILES_EMPTY))
 
 
 async def handle_sections_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:

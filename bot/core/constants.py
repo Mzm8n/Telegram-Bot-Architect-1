@@ -59,6 +59,7 @@ class LogMessages:
     FILE_SENT = "File {file_id} sent to user {user_id}"
     FILE_FORWARDED = "File forwarded to storage channel: {file_id}"
     FILE_SOFT_DELETED = "File soft deleted: id={file_id} name={name}"
+    FILE_SEND_FAILED = "Failed to send file {file_id}: {error}"
     MEDIA_GROUP_RECEIVED = "Media group received: {count} files from user {user_id}"
     DEEP_LINK = "Deep link: user {user_id} requested file {file_id}"
     STORAGE_CHANNEL_NOT_SET = "STORAGE_CHANNEL_ID not set - file storage disabled"

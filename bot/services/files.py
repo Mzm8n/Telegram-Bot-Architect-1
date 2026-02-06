@@ -1,6 +1,7 @@
 import logging
 from typing import List, Optional, Tuple
 
+from aiogram import Bot
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -206,3 +207,27 @@ class FileService:
 
 
 file_service = FileService()
+
+
+async def send_file_to_user(bot: Bot, chat_id: int, file: File) -> bool:
+    try:
+        if file.file_type == "photo":
+            await bot.send_photo(chat_id=chat_id, photo=file.file_id, caption=file.caption)
+        elif file.file_type == "video":
+            await bot.send_video(chat_id=chat_id, video=file.file_id, caption=file.caption)
+        elif file.file_type == "audio":
+            await bot.send_audio(chat_id=chat_id, audio=file.file_id, caption=file.caption)
+        elif file.file_type == "voice":
+            await bot.send_voice(chat_id=chat_id, voice=file.file_id, caption=file.caption)
+        elif file.file_type == "video_note":
+            await bot.send_video_note(chat_id=chat_id, video_note=file.file_id)
+        elif file.file_type == "animation":
+            await bot.send_animation(chat_id=chat_id, animation=file.file_id, caption=file.caption)
+        elif file.file_type == "sticker":
+            await bot.send_sticker(chat_id=chat_id, sticker=file.file_id)
+        else:
+            await bot.send_document(chat_id=chat_id, document=file.file_id, caption=file.caption)
+        return True
+    except Exception as e:
+        logger.error(LogMessages.FILE_SEND_FAILED.format(file_id=file.id, error=str(e)))
+        return False
