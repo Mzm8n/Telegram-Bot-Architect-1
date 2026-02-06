@@ -29,6 +29,10 @@ class CentralRouter:
         if callback.data is None:
             return
 
+        if callback.data == "noop":
+            await callback.answer()
+            return
+
         logger.debug(LogMessages.CENTRAL_ROUTER_CALLBACK.format(callback_data=callback.data))
 
         for prefix, handler in self._routes.items():

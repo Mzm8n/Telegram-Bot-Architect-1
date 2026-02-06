@@ -74,7 +74,7 @@ def _build_section_detail_keyboard(
             callback_data=f"{CallbackPrefixes.SECTION_VIEW}{child.id}",
         )])
 
-    files_label = i18n.get(I18nKeys.FILES_TITLE).rstrip(":")
+    files_label = i18n.get(I18nKeys.FILES_BTN_VIEW)
     if file_count > 0:
         files_label = f"{files_label} ({file_count})"
     buttons.append([InlineKeyboardButton(
@@ -259,10 +259,18 @@ async def handle_section_admin_edit(callback: CallbackQuery, kwargs: Dict[str, A
     except (ValueError, IndexError):
         return
 
+    db = await get_db()
+    parent_id = None
+    async for session in db.get_session():
+        section = await section_service.get_section(session, section_id)
+        if section:
+            parent_id = section.parent_id
+
     i18n = get_i18n()
     state_service = get_state_service()
     state_service.set_state(callback.from_user.id, STATES["EDIT_NAME"], data={
         "section_id": section_id,
+        "parent_id": parent_id,
     })
 
     cancel_kb = InlineKeyboardMarkup(inline_keyboard=[[
@@ -291,10 +299,18 @@ async def handle_section_admin_set_order(callback: CallbackQuery, kwargs: Dict[s
     except (ValueError, IndexError):
         return
 
+    db = await get_db()
+    parent_id = None
+    async for session in db.get_session():
+        section = await section_service.get_section(session, section_id)
+        if section:
+            parent_id = section.parent_id
+
     i18n = get_i18n()
     state_service = get_state_service()
     state_service.set_state(callback.from_user.id, STATES["EDIT_ORDER"], data={
         "section_id": section_id,
+        "parent_id": parent_id,
     })
 
     cancel_kb = InlineKeyboardMarkup(inline_keyboard=[[
@@ -397,13 +413,22 @@ async def handle_section_admin_cancel(callback: CallbackQuery, kwargs: Dict[str,
         return
 
     state_service = get_state_service()
+    state = state_service.get_state(callback.from_user.id)
+
+    parent_id = None
+    if state and state.data:
+        parent_id = state.data.get("parent_id")
+
     state_service.clear_state(callback.from_user.id)
 
     i18n = get_i18n()
     await callback.answer(i18n.get(I18nKeys.SECTION_ADMIN_CANCELLED))
 
     role = kwargs.get("user_role", UserRole.USER)
-    await _show_sections_list(callback, parent_id=None, role=role)
+    if parent_id is not None and parent_id != 0:
+        await _show_section_detail(callback, parent_id, role)
+    else:
+        await _show_sections_list(callback, parent_id=None, role=role)
 
 
 async def handle_section_skip_desc(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:

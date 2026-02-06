@@ -8,6 +8,7 @@ from bot.core.constants import LogMessages, I18nKeys
 from bot.services.i18n import get_i18n
 from bot.services.state import get_state_service
 from bot.handlers.home import build_home_keyboard
+from bot.models.user import UserRole
 
 logger = logging.getLogger("bot")
 
@@ -25,6 +26,8 @@ def create_fallback_router() -> Router:
         state_service = get_state_service()
         state_service.clear_state(user_id)
 
+        role = kwargs.get("user_role", UserRole.USER)
+
         i18n = get_i18n()
         name = message.from_user.first_name or ""
         unknown_text = i18n.get(I18nKeys.HOME_UNKNOWN_TEXT)
@@ -32,7 +35,7 @@ def create_fallback_router() -> Router:
 
         await message.answer(
             f"{unknown_text}\n\n{welcome_text}",
-            reply_markup=build_home_keyboard(),
+            reply_markup=build_home_keyboard(role),
         )
 
     return router

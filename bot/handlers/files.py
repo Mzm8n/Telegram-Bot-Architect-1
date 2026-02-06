@@ -366,21 +366,24 @@ async def handle_file_delete(callback: CallbackQuery, kwargs: Dict[str, Any]) ->
 
     i18n = get_i18n()
     db = await get_db()
+    section_ids: List[int] = []
 
     async for session in db.get_session():
         file = await file_service.get_file(session, file_id)
         if file is None:
             await callback.answer(i18n.get(I18nKeys.FILES_NOT_FOUND), show_alert=True)
             return
+        section_ids = await file_service.get_file_sections(session, file_id)
 
+        back_section = section_ids[0] if section_ids else 0
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
                 text=i18n.get(I18nKeys.FILES_BTN_CONFIRM_DELETE),
                 callback_data=f"{CallbackPrefixes.FILE_CONFIRM_DELETE}{file_id}",
             )],
             [InlineKeyboardButton(
-                text=i18n.get(I18nKeys.FILES_BTN_CANCEL),
-                callback_data=CallbackPrefixes.FILE_CANCEL,
+                text=i18n.get(I18nKeys.SECTION_ADMIN_BTN_CANCEL),
+                callback_data=f"{CallbackPrefixes.SECTION_VIEW}{back_section}" if back_section else CallbackPrefixes.HOME,
             )],
         ])
 
@@ -597,12 +600,17 @@ def create_files_router() -> Router:
 async def handle_deep_link_file(bot: Bot, message: Message, file_id: int) -> bool:
     i18n = get_i18n()
     db = await get_db()
+    file: Optional[File] = None
 
     async for session in db.get_session():
         file = await file_service.get_file(session, file_id)
         if file is None or file.status != FileStatus.PUBLISHED.value:
             await message.answer(i18n.get(I18nKeys.FILES_DEEP_LINK_NOT_FOUND))
             return False
+
+    if file is None:
+        await message.answer(i18n.get(I18nKeys.FILES_DEEP_LINK_NOT_FOUND))
+        return False
 
     if message.from_user:
         logger.info(LogMessages.DEEP_LINK.format(

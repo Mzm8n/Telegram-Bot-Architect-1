@@ -168,6 +168,7 @@ class I18nKeys:
     SECTION_ADMIN_INVALID_ORDER = "section.admin.invalid_order"
 
     FILES_TITLE = "files.title"
+    FILES_BTN_VIEW = "files.btn.view"
     FILES_EMPTY = "files.empty"
     FILES_BTN_UPLOAD = "files.btn.upload"
     FILES_BTN_DELETE = "files.btn.delete"
@@ -243,6 +244,7 @@ class DefaultTexts:
         "section.admin.enter_new_name": "✏️ أدخل الاسم الجديد للقسم:",
         "section.admin.invalid_order": "⚠️ يرجى إدخال رقم صحيح للترتيب.",
         "files.title": "📄 <b>الملفات المتاحة</b>",
+        "files.btn.view": "📄 الملفات",
         "files.empty": "📭 لا توجد ملفات في هذا القسم.",
         "files.btn.upload": "📤 رفع ملف",
         "files.btn.delete": "🗑 حذف الملف",
