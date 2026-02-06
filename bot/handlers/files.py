@@ -150,12 +150,19 @@ def _build_file_list_keyboard(
     i18n = get_i18n()
     buttons: List[List[InlineKeyboardButton]] = []
 
+    file_type_emoji = {
+        "document": "📄", "photo": "🖼", "video": "🎬",
+        "audio": "🎵", "voice": "🎤", "video_note": "📹",
+        "animation": "🎞", "sticker": "🏷",
+    }
+
     for f in files:
+        emoji = file_type_emoji.get(f.file_type, "📄")
         display_name = f.name
-        if len(display_name) > 45:
-            display_name = display_name[:42] + "..."
+        if len(display_name) > 40:
+            display_name = display_name[:37] + "..."
         buttons.append([InlineKeyboardButton(
-            text=display_name,
+            text=f"{emoji} {display_name}",
             callback_data=f"{CallbackPrefixes.FILE_VIEW}{f.id}",
         )])
 

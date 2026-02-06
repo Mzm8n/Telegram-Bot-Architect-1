@@ -29,6 +29,7 @@ from bot.handlers.home import (
     handle_contact_callback,
     handle_tools_callback,
     handle_admin_panel_callback,
+    handle_admin_sections_callback,
     handle_back_callback,
 )
 from bot.handlers.sections import (
@@ -137,6 +138,7 @@ async def main() -> None:
     central_router.register(CallbackPrefixes.CONTACT, handle_contact_callback)
     central_router.register(CallbackPrefixes.TOOLS, handle_tools_callback)
     central_router.register(CallbackPrefixes.ADMIN_PANEL, handle_admin_panel_callback)
+    central_router.register(CallbackPrefixes.ADMIN_SECTIONS, handle_admin_sections_callback)
     central_router.register(CallbackPrefixes.BACK, handle_back_callback)
 
     dp.include_router(create_error_handler())

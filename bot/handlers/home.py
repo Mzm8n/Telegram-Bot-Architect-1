@@ -177,12 +177,48 @@ async def handle_tools_callback(callback: CallbackQuery, kwargs: Dict[str, Any])
     await _send_placeholder(callback, "tools", "tools")
 
 
+def build_admin_panel_keyboard() -> InlineKeyboardMarkup:
+    i18n = get_i18n()
+    buttons = [
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_SECTIONS),
+            callback_data=CallbackPrefixes.ADMIN_SECTIONS,
+        )],
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.SECTIONS_BTN_HOME),
+            callback_data=CallbackPrefixes.HOME,
+        )],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 async def handle_admin_panel_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
     from bot.services.permissions import check_permission_and_notify
     role = kwargs.get("user_role", UserRole.USER)
     if not await check_permission_and_notify(callback, role, Permission.VIEW_ADMIN_PANEL):
         return
-    await _send_text_page(callback, "admin_panel", "admin_panel", I18nKeys.ADMIN_PANEL_TEXT)
+
+    if not callback.from_user or not callback.message:
+        return
+
+    i18n = get_i18n()
+    state_service = get_state_service()
+    state_service.set_state(callback.from_user.id, "admin_panel")
+
+    await callback.message.edit_text(  # type: ignore[union-attr]
+        i18n.get(I18nKeys.ADMIN_PANEL_TEXT),
+        reply_markup=build_admin_panel_keyboard(),
+    )
+    await callback.answer()
+
+
+async def handle_admin_sections_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    from bot.services.permissions import check_permission_and_notify
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SECTIONS):
+        return
+    from bot.handlers.sections import handle_sections_callback
+    await handle_sections_callback(callback, kwargs)
 
 
 async def handle_back_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:

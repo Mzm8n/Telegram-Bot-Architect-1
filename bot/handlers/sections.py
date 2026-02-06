@@ -34,7 +34,7 @@ def _build_sections_keyboard(
 
     for sec in sections:
         buttons.append([InlineKeyboardButton(
-            text=sec.name,
+            text=f"📁 {sec.name}",
             callback_data=f"{CallbackPrefixes.SECTION_VIEW}{sec.id}",
         )])
 
@@ -70,7 +70,7 @@ def _build_section_detail_keyboard(
 
     for child in children:
         buttons.append([InlineKeyboardButton(
-            text=child.name,
+            text=f"📁 {child.name}",
             callback_data=f"{CallbackPrefixes.SECTION_VIEW}{child.id}",
         )])
 
@@ -170,12 +170,9 @@ async def _show_section_detail(
     if section is None:
         return
 
-    text = f"<b>{section.name}</b>"
+    text = f"📂 <b>{section.name}</b>"
     if section.description:
-        text += f"\n{section.description}"
-
-    if not children:
-        text += f"\n\n{i18n.get(I18nKeys.SECTIONS_EMPTY)}"
+        text += f"\n\n{section.description}"
 
     keyboard = _build_section_detail_keyboard(section, children, role, file_count=file_count)
 
