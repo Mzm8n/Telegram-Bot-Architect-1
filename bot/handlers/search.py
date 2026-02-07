@@ -108,9 +108,9 @@ async def handle_search_result_section(callback: CallbackQuery, kwargs: Dict[str
     state_service = get_state_service()
     state_service.clear_state(callback.from_user.id)
 
-    from bot.handlers.sections import handle_section_view_callback
-    callback.data = f"{CallbackPrefixes.SECTION_VIEW}{section_id}"
-    await handle_section_view_callback(callback, kwargs)
+    from bot.handlers.sections import _show_section_detail
+    role = kwargs.get("user_role", UserRole.USER)
+    await _show_section_detail(callback, section_id, role)
 
 
 async def handle_search_result_file(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
