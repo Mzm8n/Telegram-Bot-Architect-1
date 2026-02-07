@@ -18,6 +18,16 @@ SEARCH_STATE = "search_input"
 MAX_RESULTS = 20
 
 
+def _is_search_state(message: Message) -> bool:
+    if not message.from_user or not message.text:
+        return False
+    state_service = get_state_service()
+    state = state_service.get_state(message.from_user.id)
+    if state is None:
+        return False
+    return state.name == SEARCH_STATE
+
+
 def _build_search_back_keyboard() -> InlineKeyboardMarkup:
     i18n = get_i18n()
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -65,7 +75,7 @@ async def handle_search_callback(callback: CallbackQuery, kwargs: Dict[str, Any]
     state_service.set_state(user_id, SEARCH_STATE)
 
     i18n = get_i18n()
-    await callback.message.edit_text(
+    await callback.message.edit_text(  # type: ignore[union-attr]
         i18n.get(I18nKeys.SEARCH_PROMPT),
         reply_markup=_build_search_back_keyboard(),
     )
@@ -83,7 +93,7 @@ async def handle_search_back_callback(callback: CallbackQuery, kwargs: Dict[str,
     role = kwargs.get("user_role", UserRole.USER)
     i18n = get_i18n()
     name = callback.from_user.first_name or ""
-    await callback.message.edit_text(
+    await callback.message.edit_text(  # type: ignore[union-attr]
         i18n.get(I18nKeys.HOME_WELCOME, name=name),
         reply_markup=build_home_keyboard(role),
     )
@@ -152,18 +162,12 @@ async def handle_search_result_file(callback: CallbackQuery, kwargs: Dict[str, A
 def create_search_router() -> Router:
     router = Router(name="search")
 
-    @router.message()
+    @router.message(_is_search_state)
     async def search_text_handler(message: Message, **kwargs: Any) -> None:
         if not message.from_user or not message.text:
             return
 
         user_id = message.from_user.id
-        state_service = get_state_service()
-        state = state_service.get_state(user_id)
-
-        if state is None or state.name != SEARCH_STATE:
-            return
-
         query = message.text.strip()
         i18n = get_i18n()
 

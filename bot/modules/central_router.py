@@ -33,14 +33,15 @@ class CentralRouter:
             await callback.answer()
             return
 
-        logger.debug(LogMessages.CENTRAL_ROUTER_CALLBACK.format(callback_data=callback.data))
+        logger.info(LogMessages.CENTRAL_ROUTER_CALLBACK.format(callback_data=callback.data))
 
         for prefix, handler in self._routes.items():
             if callback.data.startswith(prefix):
+                logger.info(f"Matched prefix '{prefix}' -> {handler.__name__}")
                 await handler(callback, kwargs)
                 return
 
-        logger.debug(LogMessages.CENTRAL_ROUTER_NO_HANDLER.format(callback_data=callback.data))
+        logger.info(LogMessages.CENTRAL_ROUTER_NO_HANDLER.format(callback_data=callback.data))
 
 
 central_router = CentralRouter()
