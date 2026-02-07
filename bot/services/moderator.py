@@ -43,6 +43,21 @@ class ModeratorService:
         await session.flush()
         return perm
 
+    async def toggle_permission(
+        self,
+        session: AsyncSession,
+        user_id: int,
+        field: str,
+    ) -> Optional[ModeratorPermission]:
+        perm = await self.get_permissions(session, user_id)
+        if perm is None:
+            return None
+
+        current = getattr(perm, field, False)
+        setattr(perm, field, not current)
+        await session.flush()
+        return perm
+
     async def delete_permissions(
         self, session: AsyncSession, user_id: int
     ) -> None:

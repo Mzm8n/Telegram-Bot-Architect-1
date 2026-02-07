@@ -62,7 +62,7 @@ async def _show_admin_files(callback: CallbackQuery, page: int = 1) -> None:
 
     if not files:
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[_admin_back_button()]])
-        await callback.message.edit_text(
+        await callback.message.edit_text(  # type: ignore[union-attr]
             i18n.get(I18nKeys.ADMIN_FILES_EMPTY),
             reply_markup=keyboard,
         )  # type: ignore[union-attr]
@@ -110,7 +110,7 @@ async def _show_admin_files(callback: CallbackQuery, page: int = 1) -> None:
     buttons.append([_admin_back_button()])
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await callback.message.edit_text(
+    await callback.message.edit_text(  # type: ignore[union-attr]
         i18n.get(I18nKeys.ADMIN_FILES_TITLE, count=total),
         reply_markup=keyboard,
     )  # type: ignore[union-attr]
@@ -287,7 +287,7 @@ async def handle_admin_file_link_pick(callback: CallbackQuery, kwargs: Dict[str,
     )])
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await callback.message.edit_text(
+    await callback.message.edit_text(  # type: ignore[union-attr]
         i18n.get(I18nKeys.ADMIN_FILE_SELECT_SECTION_LINK),
         reply_markup=keyboard,
     )  # type: ignore[union-attr]
@@ -364,7 +364,7 @@ async def handle_admin_file_unlink_pick(callback: CallbackQuery, kwargs: Dict[st
     )])
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await callback.message.edit_text(
+    await callback.message.edit_text(  # type: ignore[union-attr]
         i18n.get(I18nKeys.ADMIN_FILE_SELECT_SECTION_UNLINK),
         reply_markup=keyboard,
     )  # type: ignore[union-attr]
@@ -523,7 +523,7 @@ async def handle_admin_mod_add(callback: CallbackQuery, kwargs: Dict[str, Any]) 
         ),
     ]])
 
-    await callback.message.edit_text(
+    await callback.message.edit_text(  # type: ignore[union-attr]
         i18n.get(I18nKeys.ADMIN_MOD_ENTER_ID),
         reply_markup=keyboard,
     )  # type: ignore[union-attr]
@@ -647,7 +647,7 @@ async def handle_admin_mod_perms(callback: CallbackQuery, kwargs: Dict[str, Any]
     )])
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await callback.message.edit_text(
+    await callback.message.edit_text(  # type: ignore[union-attr]
         i18n.get(I18nKeys.ADMIN_MOD_PERMS_TITLE),
         reply_markup=keyboard,
     )  # type: ignore[union-attr]
@@ -677,11 +677,10 @@ async def handle_admin_mod_toggle_perm(callback: CallbackQuery, kwargs: Dict[str
     db = await get_db()
 
     async for session in db.get_session():
-        perms = await moderator_service.get_permissions(session, target_id)
-        if perms is None:
+        updated = await moderator_service.toggle_permission(session, target_id, field)
+        if updated is None:
             return
-        new_val = not getattr(perms, field, False)
-        await moderator_service.update_permission(session, target_id, field, new_val)
+        new_val = getattr(updated, field, False)
         await audit_service.log_action(
             session, callback.from_user.id,
             AuditActions.MODERATOR_PERMS_UPDATED,
@@ -727,7 +726,7 @@ async def handle_admin_texts(callback: CallbackQuery, kwargs: Dict[str, Any]) ->
     buttons.append([_admin_back_button()])
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await callback.message.edit_text(
+    await callback.message.edit_text(  # type: ignore[union-attr]
         i18n.get(I18nKeys.ADMIN_TEXTS_TITLE),
         reply_markup=keyboard,
     )  # type: ignore[union-attr]
@@ -787,7 +786,7 @@ async def _show_contributions(callback: CallbackQuery, page: int = 1) -> None:
 
     if not files:
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[_admin_back_button()]])
-        await callback.message.edit_text(
+        await callback.message.edit_text(  # type: ignore[union-attr]
             i18n.get(I18nKeys.ADMIN_CONTRIB_EMPTY),
             reply_markup=keyboard,
         )  # type: ignore[union-attr]
@@ -827,7 +826,7 @@ async def _show_contributions(callback: CallbackQuery, page: int = 1) -> None:
     buttons.append([_admin_back_button()])
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await callback.message.edit_text(
+    await callback.message.edit_text(  # type: ignore[union-attr]
         i18n.get(I18nKeys.ADMIN_CONTRIB_TITLE, count=total),
         reply_markup=keyboard,
     )  # type: ignore[union-attr]
@@ -861,6 +860,8 @@ async def handle_admin_contrib_view(callback: CallbackQuery, kwargs: Dict[str, A
 
     i18n = get_i18n()
     db = await get_db()
+    file: Optional[Any] = None
+    uploader_name: str = ""
 
     async for session in db.get_session():
         file = await file_service.get_file(session, file_id)
@@ -870,6 +871,9 @@ async def handle_admin_contrib_view(callback: CallbackQuery, kwargs: Dict[str, A
 
         uploader = await user_service.get_by_id(session, file.uploaded_by)
         uploader_name = uploader.first_name if uploader else str(file.uploaded_by)
+
+    if file is None:
+        return
 
     text = i18n.get(
         I18nKeys.ADMIN_CONTRIB_DETAIL,
@@ -915,6 +919,7 @@ async def handle_admin_contrib_approve(callback: CallbackQuery, kwargs: Dict[str
     i18n = get_i18n()
     db = await get_db()
     uploader_id = 0
+    file_name: str = ""
 
     async for session in db.get_session():
         file = await file_service.get_file(session, file_id)
@@ -922,6 +927,7 @@ async def handle_admin_contrib_approve(callback: CallbackQuery, kwargs: Dict[str
             await callback.answer(i18n.get(I18nKeys.FILES_NOT_FOUND), show_alert=True)
             return
         uploader_id = file.uploaded_by
+        file_name = file.name
         await file_service.set_file_status(session, file_id, FileStatus.PUBLISHED.value)
         await audit_service.log_action(
             session, callback.from_user.id,
@@ -939,7 +945,7 @@ async def handle_admin_contrib_approve(callback: CallbackQuery, kwargs: Dict[str
         try:
             await bot.send_message(
                 uploader_id,
-                i18n.get(I18nKeys.ADMIN_CONTRIB_USER_APPROVED, name=file.name if file else ""),
+                i18n.get(I18nKeys.ADMIN_CONTRIB_USER_APPROVED, name=file_name),
             )
         except Exception:
             pass
@@ -962,6 +968,7 @@ async def handle_admin_contrib_reject(callback: CallbackQuery, kwargs: Dict[str,
     i18n = get_i18n()
     db = await get_db()
     uploader_id = 0
+    file_name: str = ""
 
     async for session in db.get_session():
         file = await file_service.get_file(session, file_id)
@@ -969,6 +976,7 @@ async def handle_admin_contrib_reject(callback: CallbackQuery, kwargs: Dict[str,
             await callback.answer(i18n.get(I18nKeys.FILES_NOT_FOUND), show_alert=True)
             return
         uploader_id = file.uploaded_by
+        file_name = file.name
         await file_service.soft_delete_file(session, file_id)
         await audit_service.log_action(
             session, callback.from_user.id,
@@ -986,7 +994,7 @@ async def handle_admin_contrib_reject(callback: CallbackQuery, kwargs: Dict[str,
         try:
             await bot.send_message(
                 uploader_id,
-                i18n.get(I18nKeys.ADMIN_CONTRIB_USER_REJECTED, name=file.name if file else ""),
+                i18n.get(I18nKeys.ADMIN_CONTRIB_USER_REJECTED, name=file_name),
             )
         except Exception:
             pass
@@ -1017,7 +1025,7 @@ async def _show_audit_log(callback: CallbackQuery, page: int = 1) -> None:
 
     if not logs:
         keyboard = InlineKeyboardMarkup(inline_keyboard=[[_admin_back_button()]])
-        await callback.message.edit_text(
+        await callback.message.edit_text(  # type: ignore[union-attr]
             i18n.get(I18nKeys.ADMIN_AUDIT_EMPTY),
             reply_markup=keyboard,
         )  # type: ignore[union-attr]
@@ -1098,6 +1106,7 @@ async def handle_section_toggle(callback: CallbackQuery, kwargs: Dict[str, Any])
 
     i18n = get_i18n()
     db = await get_db()
+    msg: str = ""
 
     async for session in db.get_session():
         section = await section_service.toggle_active(session, section_id)
@@ -1136,12 +1145,16 @@ async def handle_section_copy(callback: CallbackQuery, kwargs: Dict[str, Any]) -
 
     i18n = get_i18n()
     db = await get_db()
+    section: Optional[Any] = None
 
     async for session in db.get_session():
         section = await section_service.get_section(session, section_id)
         if section is None:
             await callback.answer(i18n.get(I18nKeys.SECTION_ADMIN_NOT_FOUND), show_alert=True)
             return
+
+    if section is None:
+        return
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
@@ -1154,7 +1167,7 @@ async def handle_section_copy(callback: CallbackQuery, kwargs: Dict[str, Any]) -
         )],
     ])
 
-    await callback.message.edit_text(
+    await callback.message.edit_text(  # type: ignore[union-attr]
         i18n.get(I18nKeys.SECTION_ADMIN_CONFIRM_COPY, name=section.name),
         reply_markup=keyboard,
     )  # type: ignore[union-attr]
@@ -1176,6 +1189,7 @@ async def handle_section_confirm_copy(callback: CallbackQuery, kwargs: Dict[str,
     i18n = get_i18n()
     db = await get_db()
     new_section = None
+    section: Optional[Any] = None
 
     async for session in db.get_session():
         section = await section_service.get_section(session, section_id)
@@ -1229,7 +1243,7 @@ async def handle_contribute_upload(callback: CallbackQuery, kwargs: Dict[str, An
         )],
     ])
 
-    await callback.message.edit_text(
+    await callback.message.edit_text(  # type: ignore[union-attr]
         i18n.get(I18nKeys.CONTRIBUTE_PROMPT),
         reply_markup=keyboard,
     )  # type: ignore[union-attr]
@@ -1290,6 +1304,7 @@ async def _handle_mod_add_input(message: Message, state: Any, kwargs: Dict[str, 
         return
 
     db = await get_db()
+    target_user: Optional[Any] = None
 
     async for session in db.get_session():
         target_user = await user_service.get_by_id(session, target_id)
