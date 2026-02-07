@@ -137,7 +137,7 @@ async def handle_search_result_file(callback: CallbackQuery, kwargs: Dict[str, A
         return
 
     from bot.models.file import FileStatus
-    db = get_db()
+    db = await get_db()
     i18n = get_i18n()
     async for session in db.get_session():
         file = await file_service.get_file(session, file_id)
@@ -178,7 +178,7 @@ def create_search_router() -> Router:
 
         sections = []
         files = []
-        db = get_db()
+        db = await get_db()
         async for session in db.get_session():
             sections = await section_service.search_sections(session, query, limit=MAX_RESULTS)
             files = await file_service.search_files(session, query, limit=MAX_RESULTS)
