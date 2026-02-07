@@ -290,7 +290,7 @@ async def handle_file_view(callback: CallbackQuery, kwargs: Dict[str, Any]) -> N
     async for session in db.get_session():
         file = await file_service.get_file(session, file_id)
         if file:
-            section_ids = await file_service.get_file_sections(session, file_id)
+            section_ids = await file_service.get_file_section_ids(session, file_id)
 
     if file is None:
         await callback.answer(i18n.get(I18nKeys.FILES_NOT_FOUND), show_alert=True)
@@ -353,7 +353,7 @@ async def handle_file_delete(callback: CallbackQuery, kwargs: Dict[str, Any]) ->
         if file is None:
             await callback.answer(i18n.get(I18nKeys.FILES_NOT_FOUND), show_alert=True)
             return
-        section_ids = await file_service.get_file_sections(session, file_id)
+        section_ids = await file_service.get_file_section_ids(session, file_id)
 
         back_section = section_ids[0] if section_ids else 0
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -392,7 +392,7 @@ async def handle_file_confirm_delete(callback: CallbackQuery, kwargs: Dict[str, 
     section_ids: List[int] = []
 
     async for session in db.get_session():
-        section_ids = await file_service.get_file_sections(session, file_id)
+        section_ids = await file_service.get_file_section_ids(session, file_id)
         deleted = await file_service.soft_delete_file(session, file_id)
         if deleted is None:
             await callback.answer(i18n.get(I18nKeys.FILES_NOT_FOUND), show_alert=True)

@@ -62,6 +62,37 @@ from bot.handlers.files import (
     handle_file_confirm_delete,
     handle_file_page,
 )
+from bot.handlers.admin import (
+    create_admin_router,
+    handle_admin_files,
+    handle_admin_files_page,
+    handle_admin_file_detail,
+    handle_admin_file_toggle_status,
+    handle_admin_file_link_pick,
+    handle_admin_file_link_sec,
+    handle_admin_file_unlink_pick,
+    handle_admin_file_unlink_sec,
+    handle_admin_moderators,
+    handle_admin_mod_view,
+    handle_admin_mod_add,
+    handle_admin_mod_remove,
+    handle_admin_mod_confirm_remove,
+    handle_admin_mod_perms,
+    handle_admin_mod_toggle_perm,
+    handle_admin_texts,
+    handle_admin_text_edit,
+    handle_admin_contributions,
+    handle_admin_contrib_page,
+    handle_admin_contrib_view,
+    handle_admin_contrib_approve,
+    handle_admin_contrib_reject,
+    handle_admin_audit,
+    handle_admin_audit_page,
+    handle_admin_back,
+    handle_section_toggle,
+    handle_section_copy,
+    handle_section_confirm_copy,
+)
 from bot.handlers.fallback import create_fallback_router
 from bot.core.constants import CallbackPrefixes
 
@@ -131,6 +162,9 @@ async def main() -> None:
     central_router.register(CallbackPrefixes.SECTION_ADMIN_CONFIRM_DELETE, handle_section_admin_confirm_delete)
     central_router.register(CallbackPrefixes.SECTION_ADMIN_CANCEL, handle_section_admin_cancel)
     central_router.register(CallbackPrefixes.SECTION_ADMIN_SKIP_DESC, handle_section_skip_desc)
+    central_router.register(CallbackPrefixes.SECTION_ADMIN_TOGGLE, handle_section_toggle)
+    central_router.register(CallbackPrefixes.SECTION_ADMIN_COPY, handle_section_copy)
+    central_router.register(CallbackPrefixes.SECTION_ADMIN_CONFIRM_COPY, handle_section_confirm_copy)
     central_router.register(CallbackPrefixes.FILE_VIEW, handle_file_view)
     central_router.register(CallbackPrefixes.FILE_PAGE, handle_file_page)
     central_router.register(CallbackPrefixes.FILE_UPLOAD, handle_file_upload_start)
@@ -148,12 +182,38 @@ async def main() -> None:
     central_router.register(CallbackPrefixes.TOOLS, handle_tools_callback)
     central_router.register(CallbackPrefixes.ADMIN_PANEL, handle_admin_panel_callback)
     central_router.register(CallbackPrefixes.ADMIN_SECTIONS, handle_admin_sections_callback)
+    central_router.register(CallbackPrefixes.ADMIN_FILES, handle_admin_files)
+    central_router.register(CallbackPrefixes.ADMIN_FILES_PAGE, handle_admin_files_page)
+    central_router.register(CallbackPrefixes.ADMIN_FILE_DETAIL, handle_admin_file_detail)
+    central_router.register(CallbackPrefixes.ADMIN_FILE_TOGGLE_STATUS, handle_admin_file_toggle_status)
+    central_router.register(CallbackPrefixes.ADMIN_FILE_LINK_PICK, handle_admin_file_link_pick)
+    central_router.register(CallbackPrefixes.ADMIN_FILE_LINK_SEC, handle_admin_file_link_sec)
+    central_router.register(CallbackPrefixes.ADMIN_FILE_UNLINK_PICK, handle_admin_file_unlink_pick)
+    central_router.register(CallbackPrefixes.ADMIN_FILE_UNLINK_SEC, handle_admin_file_unlink_sec)
+    central_router.register(CallbackPrefixes.ADMIN_MODERATORS, handle_admin_moderators)
+    central_router.register(CallbackPrefixes.ADMIN_MOD_VIEW, handle_admin_mod_view)
+    central_router.register(CallbackPrefixes.ADMIN_MOD_ADD, handle_admin_mod_add)
+    central_router.register(CallbackPrefixes.ADMIN_MOD_REMOVE, handle_admin_mod_remove)
+    central_router.register(CallbackPrefixes.ADMIN_MOD_CONFIRM_REMOVE, handle_admin_mod_confirm_remove)
+    central_router.register(CallbackPrefixes.ADMIN_MOD_PERMS, handle_admin_mod_perms)
+    central_router.register(CallbackPrefixes.ADMIN_MOD_TOGGLE_PERM, handle_admin_mod_toggle_perm)
+    central_router.register(CallbackPrefixes.ADMIN_TEXTS, handle_admin_texts)
+    central_router.register(CallbackPrefixes.ADMIN_TEXT_EDIT, handle_admin_text_edit)
+    central_router.register(CallbackPrefixes.ADMIN_CONTRIBUTIONS, handle_admin_contributions)
+    central_router.register(CallbackPrefixes.ADMIN_CONTRIB_PAGE, handle_admin_contrib_page)
+    central_router.register(CallbackPrefixes.ADMIN_CONTRIB_VIEW, handle_admin_contrib_view)
+    central_router.register(CallbackPrefixes.ADMIN_CONTRIB_APPROVE, handle_admin_contrib_approve)
+    central_router.register(CallbackPrefixes.ADMIN_CONTRIB_REJECT, handle_admin_contrib_reject)
+    central_router.register(CallbackPrefixes.ADMIN_AUDIT, handle_admin_audit)
+    central_router.register(CallbackPrefixes.ADMIN_AUDIT_PAGE, handle_admin_audit_page)
+    central_router.register(CallbackPrefixes.ADMIN_BACK, handle_admin_back)
     central_router.register(CallbackPrefixes.BACK, handle_back_callback)
 
     dp.include_router(create_error_handler())
     dp.include_router(create_home_router())
     dp.include_router(create_files_router())
     dp.include_router(create_search_router())
+    dp.include_router(create_admin_router())
     dp.include_router(create_sections_router())
     dp.include_router(central_router.router)
     dp.include_router(create_fallback_router())

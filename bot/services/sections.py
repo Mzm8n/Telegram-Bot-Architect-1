@@ -5,6 +5,7 @@ from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.models.section import Section
+from bot.models.file_section import FileSection
 from bot.core.constants import LogMessages
 
 logger = logging.getLogger("bot")
@@ -146,6 +147,60 @@ class SectionService:
         )
         result = await session.execute(stmt)
         return list(result.scalars().all())
+
+
+    async def toggle_active(
+        self, session: AsyncSession, section_id: int
+    ) -> Optional[Section]:
+        section = await self.get_section(session, section_id)
+        if section is None:
+            return None
+
+        section.is_active = not section.is_active
+        await session.flush()
+        logger.info(LogMessages.SECTION_TOGGLED.format(
+            section_id=section_id, is_active=section.is_active
+        ))
+        return section
+
+    async def copy_section_tree(
+        self,
+        session: AsyncSession,
+        source_id: int,
+        target_parent_id: Optional[int] = None,
+    ) -> Optional[Section]:
+        source = await self.get_section(session, source_id)
+        if source is None:
+            return None
+
+        new_section = Section(
+            name=f"{source.name} (نسخة)",
+            description=source.description,
+            parent_id=target_parent_id,
+            order=source.order,
+            is_active=source.is_active,
+        )
+        session.add(new_section)
+        await session.flush()
+
+        stmt = select(FileSection).where(FileSection.section_id == source_id)
+        result = await session.execute(stmt)
+        file_sections = list(result.scalars().all())
+        for fs in file_sections:
+            new_fs = FileSection(
+                file_id=fs.file_id,
+                section_id=new_section.id,
+            )
+            session.add(new_fs)
+        await session.flush()
+
+        children_stmt = select(Section).where(Section.parent_id == source_id)
+        children_result = await session.execute(children_stmt)
+        children = list(children_result.scalars().all())
+        for child in children:
+            await self.copy_section_tree(session, child.id, new_section.id)
+
+        return new_section
 
 
 section_service = SectionService()

@@ -111,6 +111,19 @@ def _build_section_detail_keyboard(
         ]
         buttons.append(edit_row)
 
+        toggle_text = i18n.get(I18nKeys.SECTION_ADMIN_BTN_TOGGLE_HIDE) if section.is_active else i18n.get(I18nKeys.SECTION_ADMIN_BTN_TOGGLE_SHOW)
+        extra_row = [
+            InlineKeyboardButton(
+                text=toggle_text,
+                callback_data=f"{CallbackPrefixes.SECTION_ADMIN_TOGGLE}{section.id}",
+            ),
+            InlineKeyboardButton(
+                text=i18n.get(I18nKeys.SECTION_ADMIN_BTN_COPY),
+                callback_data=f"{CallbackPrefixes.SECTION_ADMIN_COPY}{section.id}",
+            ),
+        ]
+        buttons.append(extra_row)
+
     back_target = section.parent_id if section.parent_id is not None else 0
     buttons.append([InlineKeyboardButton(
         text=i18n.get(I18nKeys.SECTIONS_BTN_BACK),

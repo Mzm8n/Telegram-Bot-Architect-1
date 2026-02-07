@@ -11,6 +11,7 @@ from bot.core.database import Base
 
 class FileStatus(str, enum.Enum):
     DRAFT = "draft"
+    PENDING = "pending"
     PUBLISHED = "published"
 
 

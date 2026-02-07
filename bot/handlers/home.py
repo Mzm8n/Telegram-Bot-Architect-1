@@ -158,7 +158,8 @@ async def handle_home_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) 
 
 
 async def handle_contribute_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
-    await _send_placeholder(callback, "contribute", "contribute")
+    from bot.handlers.admin import handle_contribute_upload
+    await handle_contribute_upload(callback, kwargs)
 
 
 async def handle_about_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
@@ -179,6 +180,26 @@ def build_admin_panel_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(
             text=i18n.get(I18nKeys.ADMIN_BTN_SECTIONS),
             callback_data=CallbackPrefixes.ADMIN_SECTIONS,
+        )],
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_FILES),
+            callback_data=CallbackPrefixes.ADMIN_FILES,
+        )],
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_MODERATORS),
+            callback_data=CallbackPrefixes.ADMIN_MODERATORS,
+        )],
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_TEXTS),
+            callback_data=CallbackPrefixes.ADMIN_TEXTS,
+        )],
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_CONTRIBUTIONS),
+            callback_data=CallbackPrefixes.ADMIN_CONTRIBUTIONS,
+        )],
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_AUDIT),
+            callback_data=CallbackPrefixes.ADMIN_AUDIT,
         )],
         [InlineKeyboardButton(
             text=i18n.get(I18nKeys.SECTIONS_BTN_HOME),

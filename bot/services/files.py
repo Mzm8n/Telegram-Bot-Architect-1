@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.core.constants import LogMessages
 from bot.models.file import File, FileStatus
 from bot.models.file_section import FileSection
+from bot.models.section import Section
 
 logger = logging.getLogger("bot")
 
@@ -196,7 +197,7 @@ class FileService:
         ))
         return f
 
-    async def get_file_sections(
+    async def get_file_section_ids(
         self, session: AsyncSession, file_id: int
     ) -> List[int]:
         stmt = select(FileSection.section_id).where(
@@ -205,6 +206,83 @@ class FileService:
         result = await session.execute(stmt)
         return list(result.scalars().all())
 
+
+    async def list_all_files(
+        self,
+        session: AsyncSession,
+        include_inactive: bool = False,
+        page: int = 1,
+        per_page: int = 10,
+    ) -> Tuple[List[File], int]:
+        count_stmt = select(func.count()).select_from(File)
+        if not include_inactive:
+            count_stmt = count_stmt.where(File.is_active == True)
+        total_result = await session.execute(count_stmt)
+        total = total_result.scalar() or 0
+
+        offset = (page - 1) * per_page
+        stmt = select(File)
+        if not include_inactive:
+            stmt = stmt.where(File.is_active == True)
+        stmt = stmt.order_by(File.id.desc()).offset(offset).limit(per_page)
+        result = await session.execute(stmt)
+        files = list(result.scalars().all())
+        return files, total
+
+    async def set_file_status(
+        self, session: AsyncSession, file_id: int, status: str
+    ) -> Optional[File]:
+        f = await self.get_file(session, file_id)
+        if f is None:
+            return None
+
+        f.status = status
+        await session.flush()
+        return f
+
+    async def get_pending_files(
+        self,
+        session: AsyncSession,
+        page: int = 1,
+        per_page: int = 10,
+    ) -> Tuple[List[File], int]:
+        count_stmt = (
+            select(func.count())
+            .select_from(File)
+            .where(
+                File.is_active == True,
+                File.status == FileStatus.PENDING.value,
+            )
+        )
+        total_result = await session.execute(count_stmt)
+        total = total_result.scalar() or 0
+
+        offset = (page - 1) * per_page
+        stmt = (
+            select(File)
+            .where(
+                File.is_active == True,
+                File.status == FileStatus.PENDING.value,
+            )
+            .order_by(File.id.desc())
+            .offset(offset)
+            .limit(per_page)
+        )
+        result = await session.execute(stmt)
+        files = list(result.scalars().all())
+        return files, total
+
+    async def get_file_sections(
+        self, session: AsyncSession, file_id: int
+    ) -> List[Section]:
+        stmt = (
+            select(Section)
+            .join(FileSection, Section.id == FileSection.section_id)
+            .where(FileSection.file_id == file_id)
+            .order_by(Section.id.asc())
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
 
     async def search_files(
         self,

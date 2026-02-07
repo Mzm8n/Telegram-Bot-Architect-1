@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,6 +78,31 @@ class UserService:
         stmt = update(User).where(User.id == user_id).values(is_blocked=blocked)
         await session.execute(stmt)
         await session.flush()
+
+
+    async def list_moderators(self, session: AsyncSession) -> List[User]:
+        stmt = (
+            select(User)
+            .where(User.role == UserRole.MODERATOR)
+            .order_by(User.id.asc())
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def search_by_id_or_username(
+        self, session: AsyncSession, query: str
+    ) -> Optional[User]:
+        if query.isdigit():
+            stmt = select(User).where(User.id == int(query))
+            result = await session.execute(stmt)
+            user = result.scalar_one_or_none()
+            if user is not None:
+                return user
+
+        clean_query = query.lstrip("@")
+        stmt = select(User).where(User.username == clean_query)
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
 
 
 user_service = UserService()
