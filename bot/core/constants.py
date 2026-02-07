@@ -64,6 +64,11 @@ class LogMessages:
     DEEP_LINK = "Deep link: user {user_id} requested file {file_id}"
     STORAGE_CHANNEL_NOT_SET = "STORAGE_CHANNEL_ID not set - file storage disabled"
 
+    SEARCH_STARTED = "Search started by user {user_id}"
+    SEARCH_QUERY = "Search query from user {user_id}: {query}"
+    SEARCH_RESULTS = "Search results for user {user_id}: {sections} sections, {files} files"
+    SEARCH_RESULT_SELECTED = "Search result selected by user {user_id}: {type} {id}"
+
 
 class ErrorMessages:
     DATABASE_NOT_INITIALIZED = "Database not initialized"
@@ -108,6 +113,9 @@ class CallbackPrefixes:
     FILE_DONE = "f_done"
     FILE_PUBLISH = "f_pub:"
     SEARCH = "search"
+    SEARCH_RESULT_SECTION = "sr_sec:"
+    SEARCH_RESULT_FILE = "sr_file:"
+    SEARCH_BACK = "sr_back"
     CONTRIBUTE = "contribute"
     ABOUT = "about"
     CONTACT = "contact"
@@ -197,6 +205,14 @@ class I18nKeys:
     FILES_PAGE_NEXT = "files.page_next"
     FILES_DEEP_LINK_NOT_FOUND = "files.deep_link.not_found"
 
+    SEARCH_PROMPT = "search.prompt"
+    SEARCH_RESULTS_TITLE = "search.results_title"
+    SEARCH_NO_RESULTS = "search.no_results"
+    SEARCH_RESULT_SECTION_LABEL = "search.result.section"
+    SEARCH_RESULT_FILE_LABEL = "search.result.file"
+    SEARCH_BTN_BACK = "search.btn.back"
+    SEARCH_QUERY_TOO_SHORT = "search.query_too_short"
+
 
 class DefaultTexts:
     TEXTS = {
@@ -272,4 +288,11 @@ class DefaultTexts:
         "files.page_prev": "◀️ السابق",
         "files.page_next": "التالي ▶️",
         "files.deep_link.not_found": "⚠️ الملف المطلوب غير موجود أو تم حذفه.",
+        "search.prompt": "🔍 <b>البحث</b>\n\nأدخل نص البحث للبحث في الأقسام والملفات:",
+        "search.results_title": "🔍 <b>نتائج البحث عن:</b> «{query}»\n\n{count} نتيجة",
+        "search.no_results": "🔍 لا توجد نتائج مطابقة.",
+        "search.result.section": "📁 {name}",
+        "search.result.file": "📄 {name}",
+        "search.btn.back": "🔙 رجوع من البحث",
+        "search.query_too_short": "⚠️ يرجى إدخال حرفين على الأقل للبحث.",
     }

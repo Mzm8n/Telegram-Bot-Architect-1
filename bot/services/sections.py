@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.models.section import Section
@@ -127,6 +127,25 @@ class SectionService:
             breadcrumb.insert(0, section)
             current_id = section.parent_id
         return breadcrumb
+
+
+    async def search_sections(
+        self,
+        session: AsyncSession,
+        query: str,
+        limit: int = 20,
+    ) -> List[Section]:
+        stmt = (
+            select(Section)
+            .where(
+                Section.is_active == True,
+                func.lower(Section.name).contains(query.lower()),
+            )
+            .order_by(Section.order.asc(), Section.id.asc())
+            .limit(limit)
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
 
 
 section_service = SectionService()

@@ -1,13 +1,19 @@
 from bot.handlers.home import (
     create_home_router,
     handle_home_callback,
-    handle_search_callback,
     handle_contribute_callback,
     handle_about_callback,
     handle_contact_callback,
     handle_tools_callback,
     handle_admin_panel_callback,
     handle_back_callback,
+)
+from bot.handlers.search import (
+    create_search_router,
+    handle_search_callback,
+    handle_search_back_callback,
+    handle_search_result_section,
+    handle_search_result_file,
 )
 from bot.handlers.sections import (
     create_sections_router,
@@ -26,6 +32,7 @@ from bot.handlers.fallback import create_fallback_router
 
 __all__ = [
     "create_home_router",
+    "create_search_router",
     "create_sections_router",
     "create_fallback_router",
     "handle_home_callback",
@@ -40,6 +47,9 @@ __all__ = [
     "handle_section_admin_cancel",
     "handle_section_skip_desc",
     "handle_search_callback",
+    "handle_search_back_callback",
+    "handle_search_result_section",
+    "handle_search_result_file",
     "handle_contribute_callback",
     "handle_about_callback",
     "handle_contact_callback",

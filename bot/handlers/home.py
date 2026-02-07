@@ -157,10 +157,6 @@ async def handle_home_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) 
     await _send_home(callback, role)
 
 
-async def handle_search_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
-    await _send_placeholder(callback, "search", "search")
-
-
 async def handle_contribute_callback(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
     await _send_placeholder(callback, "contribute", "contribute")
 

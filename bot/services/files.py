@@ -206,6 +206,26 @@ class FileService:
         return list(result.scalars().all())
 
 
+    async def search_files(
+        self,
+        session: AsyncSession,
+        query: str,
+        limit: int = 20,
+    ) -> List[File]:
+        stmt = (
+            select(File)
+            .where(
+                File.is_active == True,
+                File.status == FileStatus.PUBLISHED.value,
+                func.lower(File.name).contains(query.lower()),
+            )
+            .order_by(File.id.desc())
+            .limit(limit)
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
+
 file_service = FileService()
 
 

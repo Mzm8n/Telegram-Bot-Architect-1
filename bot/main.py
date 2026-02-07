@@ -23,7 +23,6 @@ from bot.modules.health_check import check_health
 from bot.handlers.home import (
     create_home_router,
     handle_home_callback,
-    handle_search_callback,
     handle_contribute_callback,
     handle_about_callback,
     handle_contact_callback,
@@ -31,6 +30,13 @@ from bot.handlers.home import (
     handle_admin_panel_callback,
     handle_admin_sections_callback,
     handle_back_callback,
+)
+from bot.handlers.search import (
+    create_search_router,
+    handle_search_callback,
+    handle_search_back_callback,
+    handle_search_result_section,
+    handle_search_result_file,
 )
 from bot.handlers.sections import (
     create_sections_router,
@@ -132,6 +138,9 @@ async def main() -> None:
     central_router.register(CallbackPrefixes.FILE_CONFIRM_DELETE, handle_file_confirm_delete)
     central_router.register(CallbackPrefixes.FILE_DONE, handle_file_done)
     central_router.register(CallbackPrefixes.FILE_CANCEL, handle_file_cancel)
+    central_router.register(CallbackPrefixes.SEARCH_RESULT_SECTION, handle_search_result_section)
+    central_router.register(CallbackPrefixes.SEARCH_RESULT_FILE, handle_search_result_file)
+    central_router.register(CallbackPrefixes.SEARCH_BACK, handle_search_back_callback)
     central_router.register(CallbackPrefixes.SEARCH, handle_search_callback)
     central_router.register(CallbackPrefixes.CONTRIBUTE, handle_contribute_callback)
     central_router.register(CallbackPrefixes.ABOUT, handle_about_callback)
@@ -144,6 +153,7 @@ async def main() -> None:
     dp.include_router(create_error_handler())
     dp.include_router(create_home_router())
     dp.include_router(create_files_router())
+    dp.include_router(create_search_router())
     dp.include_router(create_sections_router())
     dp.include_router(central_router.router)
     dp.include_router(create_fallback_router())
