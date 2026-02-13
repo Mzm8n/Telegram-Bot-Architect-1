@@ -6,7 +6,8 @@ This project is a Telegram bot designed to manage a university educational libra
 ## User Preferences
 I prefer that the agent adheres strictly to the defined architectural patterns and project structure. All user-facing texts should be managed dynamically through the `text_entries` table. I also prefer that administrative actions are thoroughly logged using the audit log system. For UI/UX, ensure that all buttons have appropriate emojis and confirmation messages are clear, especially for destructive actions. When displaying files, categorize them with relevant emojis.
 
-## System Architecture
+#
+# System Architecture
 
 ### Core Technologies
 The bot is built with **Python 3.11**, utilizing **aiogram** for Telegram bot interactions, **SQLAlchemy** as the ORM for database operations, **asyncpg** for asynchronous PostgreSQL connectivity, and **Alembic** for database migrations.
