@@ -109,6 +109,11 @@ class AuditActions:
     TEXT_UPDATED = "text_updated"
     CONTRIBUTION_APPROVED = "contribution_approved"
     CONTRIBUTION_REJECTED = "contribution_rejected"
+    SUBSCRIPTION_UPDATED = "subscription_updated"
+    BROADCAST_SENT = "broadcast_sent"
+    MAINTENANCE_TOGGLED = "maintenance_toggled"
+    BACKUP_EXPORTED = "backup_exported"
+    BACKUP_RESTORED = "backup_restored"
 
 
 class CallbackPrefixes:
@@ -172,6 +177,25 @@ class CallbackPrefixes:
     ADMIN_AUDIT = "adm_audit"
     ADMIN_AUDIT_PAGE = "adm_ap:"
     ADMIN_BACK = "adm_back"
+    SUB_VERIFY = "sub_verify"
+    ADMIN_SUBSCRIPTION = "adm_subs"
+    ADMIN_SUB_TOGGLE = "adm_sub_tog"
+    ADMIN_SUB_ADD = "adm_sub_add"
+    ADMIN_SUB_REMOVE = "adm_sub_rm:"
+    ADMIN_STATS = "adm_stats"
+    ADMIN_BROADCAST = "adm_bc"
+    ADMIN_BROADCAST_TEXT = "adm_bc_txt"
+    ADMIN_BROADCAST_FILE = "adm_bc_file"
+    ADMIN_BROADCAST_CONFIRM = "adm_bc_cf"
+    ADMIN_BROADCAST_CANCEL = "adm_bc_cancel"
+    ADMIN_BAN = "adm_ban"
+    ADMIN_BAN_BLOCK = "adm_ban_block"
+    ADMIN_BAN_UNBLOCK = "adm_ban_unblock"
+    ADMIN_MAINTENANCE = "adm_maint"
+    ADMIN_MAINT_TOGGLE = "adm_maint_tog"
+    ADMIN_MAINT_SET_MESSAGE = "adm_maint_msg"
+    ADMIN_BACKUP_EXPORT = "adm_backup_exp"
+    ADMIN_BACKUP_RESTORE = "adm_backup_res"
 
 
 class I18nKeys:
@@ -204,6 +228,11 @@ class I18nKeys:
     ADMIN_BTN_TEXTS = "admin.btn.texts"
     ADMIN_BTN_CONTRIBUTIONS = "admin.btn.contributions"
     ADMIN_BTN_AUDIT = "admin.btn.audit"
+    ADMIN_BTN_SUBSCRIPTION = "admin.btn.subscription"
+    ADMIN_BTN_STATS = "admin.btn.stats"
+    ADMIN_BTN_BROADCAST = "admin.btn.broadcast"
+    ADMIN_BTN_BAN = "admin.btn.ban"
+    ADMIN_BTN_MAINTENANCE = "admin.btn.maintenance"
     ADMIN_BTN_BACK = "admin.btn.back"
 
     SECTIONS_TITLE = "sections.title"
@@ -333,6 +362,58 @@ class I18nKeys:
     CONTRIBUTE_SUCCESS = "contribute.success"
     CONTRIBUTE_DUPLICATE = "contribute.duplicate"
 
+    SUBSCRIPTION_BTN_VERIFY = "subscription.btn.verify"
+
+    ADMIN_SUB_TITLE = "admin.sub.title"
+    ADMIN_SUB_STATUS_ON = "admin.sub.status_on"
+    ADMIN_SUB_STATUS_OFF = "admin.sub.status_off"
+    ADMIN_SUB_BTN_TOGGLE_ON = "admin.sub.btn.toggle_on"
+    ADMIN_SUB_BTN_TOGGLE_OFF = "admin.sub.btn.toggle_off"
+    ADMIN_SUB_BTN_ADD = "admin.sub.btn.add"
+    ADMIN_SUB_BTN_REMOVE = "admin.sub.btn.remove"
+    ADMIN_SUB_ENTER_CHANNEL = "admin.sub.enter_channel"
+    ADMIN_SUB_ADDED = "admin.sub.added"
+    ADMIN_SUB_REMOVED = "admin.sub.removed"
+
+    ADMIN_STATS_TITLE = "admin.stats.title"
+
+    ADMIN_BROADCAST_TITLE = "admin.broadcast.title"
+    ADMIN_BROADCAST_BTN_TEXT = "admin.broadcast.btn.text"
+    ADMIN_BROADCAST_BTN_FILE = "admin.broadcast.btn.file"
+    ADMIN_BROADCAST_ENTER_TEXT = "admin.broadcast.enter_text"
+    ADMIN_BROADCAST_ENTER_FILE = "admin.broadcast.enter_file"
+    ADMIN_BROADCAST_CONFIRM_TEXT = "admin.broadcast.confirm_text"
+    ADMIN_BROADCAST_CONFIRM_FILE = "admin.broadcast.confirm_file"
+    ADMIN_BROADCAST_BTN_CONFIRM = "admin.broadcast.btn.confirm"
+    ADMIN_BROADCAST_BTN_CANCEL = "admin.broadcast.btn.cancel"
+    ADMIN_BROADCAST_CANCELLED = "admin.broadcast.cancelled"
+    ADMIN_BROADCAST_DONE = "admin.broadcast.done"
+
+    ADMIN_BAN_TITLE = "admin.ban.title"
+    ADMIN_BAN_BTN_BLOCK = "admin.ban.btn.block"
+    ADMIN_BAN_BTN_UNBLOCK = "admin.ban.btn.unblock"
+    ADMIN_BAN_ENTER_ID_BLOCK = "admin.ban.enter_id_block"
+    ADMIN_BAN_ENTER_ID_UNBLOCK = "admin.ban.enter_id_unblock"
+    ADMIN_BAN_INVALID_ID = "admin.ban.invalid_id"
+    ADMIN_BAN_BLOCKED = "admin.ban.blocked"
+    ADMIN_BAN_UNBLOCKED = "admin.ban.unblocked"
+
+    ADMIN_MAINT_TITLE = "admin.maint.title"
+    ADMIN_MAINT_BTN_TOGGLE_ON = "admin.maint.btn.toggle_on"
+    ADMIN_MAINT_BTN_TOGGLE_OFF = "admin.maint.btn.toggle_off"
+    ADMIN_MAINT_BTN_SET_MESSAGE = "admin.maint.btn.set_message"
+    ADMIN_MAINT_BTN_BACKUP_EXPORT = "admin.maint.btn.backup_export"
+    ADMIN_MAINT_BTN_BACKUP_RESTORE = "admin.maint.btn.backup_restore"
+    ADMIN_MAINT_ENTER_MESSAGE = "admin.maint.enter_message"
+    ADMIN_MAINT_UPDATED = "admin.maint.updated"
+
+    MAINTENANCE_DEFAULT_MESSAGE = "maintenance.default_message"
+
+    ADMIN_BACKUP_EXPORTED = "admin.backup.exported"
+    ADMIN_BACKUP_RESTORE_PROMPT = "admin.backup.restore_prompt"
+    ADMIN_BACKUP_RESTORED = "admin.backup.restored"
+    ADMIN_BACKUP_FAILED = "admin.backup.failed"
+
 
 class DefaultTexts:
     TEXTS = {
@@ -362,6 +443,11 @@ class DefaultTexts:
         "admin.btn.texts": "📝 إدارة النصوص",
         "admin.btn.contributions": "📥 مراجعة المساهمات",
         "admin.btn.audit": "📋 سجل العمليات",
+        "admin.btn.subscription": "📢 الاشتراك الإجباري",
+        "admin.btn.stats": "📊 الإحصائيات",
+        "admin.btn.broadcast": "📣 البث الجماعي",
+        "admin.btn.ban": "🚫 إدارة الحظر",
+        "admin.btn.maintenance": "🛠 الصيانة والنسخ",
         "admin.btn.back": "🔙 رجوع للوحة التحكم",
         "sections.title": "📚 <b>الأقسام المتاحة</b>",
         "sections.empty": "📭 لا توجد أقسام حالياً.",
@@ -477,6 +563,50 @@ class DefaultTexts:
         "admin.audit.title": "📋 <b>سجل العمليات</b>\n\nآخر العمليات:",
         "admin.audit.empty": "📭 لا توجد عمليات مسجلة.",
         "admin.audit.entry": "👤 {user_id} | {action}\n📅 {time}\n{details}",
+        "subscription.btn.verify": "✅ تحقق من الاشتراك",
+        "admin.sub.title": "📢 <b>إدارة الاشتراك الإجباري</b>\n\nالحالة: {status}\nالقنوات:\n{channels}",
+        "admin.sub.status_on": "✅ مفعل",
+        "admin.sub.status_off": "⛔️ معطل",
+        "admin.sub.btn.toggle_on": "✅ تفعيل الاشتراك",
+        "admin.sub.btn.toggle_off": "⛔️ تعطيل الاشتراك",
+        "admin.sub.btn.add": "➕ إضافة قناة",
+        "admin.sub.btn.remove": "➖ حذف قناة",
+        "admin.sub.enter_channel": "✍️ أرسل معرف القناة (مثل @channel أو -100..).",
+        "admin.sub.added": "✅ تمت إضافة القناة.",
+        "admin.sub.removed": "✅ تم حذف القناة.",
+        "admin.stats.title": "📊 <b>إحصائيات النظام</b>\n\n👥 المستخدمون: {users}\n📂 الأقسام: {sections}\n📄 الملفات: {files}\n🛡 المشرفون: {moderators}\n📥 المساهمات المعلقة: {contributions}",
+        "admin.broadcast.title": "📣 <b>البث الجماعي</b>\n\nاختر نوع البث:",
+        "admin.broadcast.btn.text": "✉️ بث نصي",
+        "admin.broadcast.btn.file": "📎 بث ملف",
+        "admin.broadcast.enter_text": "✍️ أرسل النص المراد بثه لجميع المستخدمين.",
+        "admin.broadcast.enter_file": "📎 أرسل ملفًا (مع كابتشن اختياري) لبثه لجميع المستخدمين.",
+        "admin.broadcast.confirm_text": "⚠️ تأكيد بث النص التالي؟\n\n{text}",
+        "admin.broadcast.confirm_file": "⚠️ تأكيد بث الملف «{name}» لجميع المستخدمين؟",
+        "admin.broadcast.btn.confirm": "✅ تأكيد الإرسال",
+        "admin.broadcast.btn.cancel": "❌ إلغاء",
+        "admin.broadcast.cancelled": "تم إلغاء عملية البث.",
+        "admin.broadcast.done": "✅ انتهى البث.\nنجح: {success}\nفشل: {failed}",
+        "admin.ban.title": "🚫 <b>إدارة الحظر</b>\n\nاختر العملية المطلوبة:",
+        "admin.ban.btn.block": "🚫 حظر مستخدم",
+        "admin.ban.btn.unblock": "✅ رفع الحظر",
+        "admin.ban.enter_id_block": "🆔 أرسل معرف المستخدم لحظره.",
+        "admin.ban.enter_id_unblock": "🆔 أرسل معرف المستخدم لرفع الحظر عنه.",
+        "admin.ban.invalid_id": "⚠️ المعرف غير صالح.",
+        "admin.ban.blocked": "✅ تم حظر المستخدم: {user_id}",
+        "admin.ban.unblocked": "✅ تم رفع الحظر عن المستخدم: {user_id}",
+        "admin.maint.title": "🛠 <b>الصيانة والنسخ الاحتياطي</b>\n\nالحالة: {status}\nالرسالة الحالية:\n{message}",
+        "admin.maint.btn.toggle_on": "✅ تفعيل الصيانة",
+        "admin.maint.btn.toggle_off": "⛔️ تعطيل الصيانة",
+        "admin.maint.btn.set_message": "✏️ تعديل رسالة الصيانة",
+        "admin.maint.btn.backup_export": "📦 تصدير نسخة احتياطية",
+        "admin.maint.btn.backup_restore": "♻️ استعادة نسخة احتياطية",
+        "admin.maint.enter_message": "✍️ أرسل رسالة الصيانة الجديدة.",
+        "admin.maint.updated": "✅ تم تحديث إعدادات الصيانة.",
+        "maintenance.default_message": "🛠 البوت تحت الصيانة مؤقتًا، يرجى المحاولة لاحقًا.",
+        "admin.backup.exported": "✅ تم إنشاء نسخة احتياطية وإرسالها.",
+        "admin.backup.restore_prompt": "📥 أرسل ملف نسخة احتياطية JSON لاستعادته الآن.",
+        "admin.backup.restored": "✅ تمت استعادة النسخة الاحتياطية بنجاح.",
+        "admin.backup.failed": "⚠️ فشلت استعادة النسخة الاحتياطية.",
         "contribute.prompt": "📤 <b>مساهمة بملف</b>\n\nأرسل الملف المراد المساهمة به.\nسيتم مراجعته من قبل الإدارة قبل النشر.\n\nاضغط «🔙 رجوع» للعودة.",
         "contribute.success": "✅ تم استلام مساهمتك بنجاح!\nسيتم مراجعتها من قبل الإدارة.",
         "contribute.duplicate": "🔄 هذا الملف تم إرساله مسبقاً.",

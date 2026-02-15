@@ -28,6 +28,7 @@ ROLE_PERMISSIONS = {
     UserRole.MODERATOR: {
         Permission.BROWSE,
         Permission.UPLOAD_FILE,
+        Permission.VIEW_ADMIN_PANEL,
     },
     UserRole.ADMIN: {
         Permission.BROWSE,
