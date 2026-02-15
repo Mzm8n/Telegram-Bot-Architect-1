@@ -202,6 +202,26 @@ def build_admin_panel_keyboard() -> InlineKeyboardMarkup:
             callback_data=CallbackPrefixes.ADMIN_AUDIT,
         )],
         [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_SUBSCRIPTION),
+            callback_data=CallbackPrefixes.ADMIN_SUBSCRIPTION,
+        )],
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_STATS),
+            callback_data=CallbackPrefixes.ADMIN_STATS,
+        )],
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_BROADCAST),
+            callback_data=CallbackPrefixes.ADMIN_BROADCAST,
+        )],
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_BAN),
+            callback_data=CallbackPrefixes.ADMIN_BAN,
+        )],
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_MAINTENANCE),
+            callback_data=CallbackPrefixes.ADMIN_MAINTENANCE,
+        )],
+        [InlineKeyboardButton(
             text=i18n.get(I18nKeys.SECTIONS_BTN_HOME),
             callback_data=CallbackPrefixes.HOME,
         )],

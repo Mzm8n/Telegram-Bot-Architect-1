@@ -89,6 +89,12 @@ class UserService:
         result = await session.execute(stmt)
         return list(result.scalars().all())
 
+
+    async def list_user_ids(self, session: AsyncSession) -> List[int]:
+        stmt = select(User.id).order_by(User.id.asc())
+        result = await session.execute(stmt)
+        return [int(v) for v in result.scalars().all()]
+
     async def search_by_id_or_username(
         self, session: AsyncSession, query: str
     ) -> Optional[User]:
