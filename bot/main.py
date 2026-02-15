@@ -14,6 +14,7 @@ from bot.services.state import init_state_service
 from bot.services.seeder import seed_default_texts
 from bot.middlewares.ban_check import BanCheckMiddleware
 from bot.middlewares.subscription_check import SubscriptionCheckMiddleware
+from bot.middlewares.maintenance_check import MaintenanceCheckMiddleware
 from bot.middlewares.role_check import RoleMiddleware
 from bot.middlewares.i18n_middleware import I18nMiddleware
 from bot.middlewares.user_tracking import UserTrackingMiddleware
@@ -92,6 +93,25 @@ from bot.handlers.admin import (
     handle_section_toggle,
     handle_section_copy,
     handle_section_confirm_copy,
+    handle_subscription_verify,
+    handle_admin_subscription,
+    handle_admin_sub_toggle,
+    handle_admin_sub_add,
+    handle_admin_sub_remove,
+    handle_admin_stats,
+    handle_admin_broadcast,
+    handle_admin_broadcast_text,
+    handle_admin_broadcast_file,
+    handle_admin_broadcast_confirm,
+    handle_admin_broadcast_cancel,
+    handle_admin_ban,
+    handle_admin_ban_block,
+    handle_admin_ban_unblock,
+    handle_admin_maintenance,
+    handle_admin_maint_toggle,
+    handle_admin_maint_set_message,
+    handle_admin_backup_export,
+    handle_admin_backup_restore,
 )
 from bot.handlers.fallback import create_fallback_router
 from bot.core.constants import CallbackPrefixes
@@ -148,6 +168,7 @@ async def main() -> None:
         log_channel_id=config.bot.log_channel_id,
     ))
     dp.update.outer_middleware(RoleMiddleware())
+    dp.update.outer_middleware(MaintenanceCheckMiddleware())
     dp.update.outer_middleware(I18nMiddleware())
     logger.info(LogMessages.MIDDLEWARES_REGISTERED)
 
@@ -206,6 +227,25 @@ async def main() -> None:
     central_router.register(CallbackPrefixes.ADMIN_CONTRIB_REJECT, handle_admin_contrib_reject)
     central_router.register(CallbackPrefixes.ADMIN_AUDIT, handle_admin_audit)
     central_router.register(CallbackPrefixes.ADMIN_AUDIT_PAGE, handle_admin_audit_page)
+    central_router.register(CallbackPrefixes.SUB_VERIFY, handle_subscription_verify)
+    central_router.register(CallbackPrefixes.ADMIN_SUBSCRIPTION, handle_admin_subscription)
+    central_router.register(CallbackPrefixes.ADMIN_SUB_TOGGLE, handle_admin_sub_toggle)
+    central_router.register(CallbackPrefixes.ADMIN_SUB_ADD, handle_admin_sub_add)
+    central_router.register(CallbackPrefixes.ADMIN_SUB_REMOVE, handle_admin_sub_remove)
+    central_router.register(CallbackPrefixes.ADMIN_STATS, handle_admin_stats)
+    central_router.register(CallbackPrefixes.ADMIN_BROADCAST, handle_admin_broadcast)
+    central_router.register(CallbackPrefixes.ADMIN_BROADCAST_TEXT, handle_admin_broadcast_text)
+    central_router.register(CallbackPrefixes.ADMIN_BROADCAST_FILE, handle_admin_broadcast_file)
+    central_router.register(CallbackPrefixes.ADMIN_BROADCAST_CONFIRM, handle_admin_broadcast_confirm)
+    central_router.register(CallbackPrefixes.ADMIN_BROADCAST_CANCEL, handle_admin_broadcast_cancel)
+    central_router.register(CallbackPrefixes.ADMIN_BAN, handle_admin_ban)
+    central_router.register(CallbackPrefixes.ADMIN_BAN_BLOCK, handle_admin_ban_block)
+    central_router.register(CallbackPrefixes.ADMIN_BAN_UNBLOCK, handle_admin_ban_unblock)
+    central_router.register(CallbackPrefixes.ADMIN_MAINTENANCE, handle_admin_maintenance)
+    central_router.register(CallbackPrefixes.ADMIN_MAINT_TOGGLE, handle_admin_maint_toggle)
+    central_router.register(CallbackPrefixes.ADMIN_MAINT_SET_MESSAGE, handle_admin_maint_set_message)
+    central_router.register(CallbackPrefixes.ADMIN_BACKUP_EXPORT, handle_admin_backup_export)
+    central_router.register(CallbackPrefixes.ADMIN_BACKUP_RESTORE, handle_admin_backup_restore)
     central_router.register(CallbackPrefixes.ADMIN_BACK, handle_admin_back)
     central_router.register(CallbackPrefixes.BACK, handle_back_callback)
 

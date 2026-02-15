@@ -1,8 +1,11 @@
+import asyncio
+import json
 import logging
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from aiogram import Router
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 
 from bot.core.constants import LogMessages, I18nKeys, CallbackPrefixes, AuditActions
 from bot.core.database import get_db
@@ -14,6 +17,9 @@ from bot.services.user import user_service
 from bot.services.audit import audit_service
 from bot.services.moderator import moderator_service
 from bot.services.permissions import has_permission, check_permission_and_notify, Permission
+from bot.services.settings_manager import settings_manager
+from bot.services.stats import stats_service
+from bot.services.backup import backup_service
 from bot.models.user import UserRole
 from bot.models.file import File, FileStatus
 from bot.models.section import Section
@@ -28,6 +34,13 @@ STATES = {
     "MOD_ADD": "admin_mod_add",
     "TEXT_EDIT": "admin_text_edit",
     "CONTRIBUTE_UPLOAD": "contribute_upload",
+    "SUB_ADD_CHANNEL": "admin_sub_add_channel",
+    "BROADCAST_TEXT": "admin_broadcast_text",
+    "BROADCAST_FILE": "admin_broadcast_file",
+    "BAN_BLOCK": "admin_ban_block",
+    "BAN_UNBLOCK": "admin_ban_unblock",
+    "MAINT_MESSAGE": "admin_maintenance_message",
+    "BACKUP_RESTORE": "admin_backup_restore",
 }
 
 
@@ -1250,14 +1263,356 @@ async def handle_contribute_upload(callback: CallbackQuery, kwargs: Dict[str, An
     await callback.answer()
 
 
+
+async def handle_subscription_verify(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    i18n = get_i18n()
+    await callback.answer(i18n.get(I18nKeys.SUBSCRIPTION_BTN_VERIFY), show_alert=True)
+
+
+async def _show_admin_subscription(callback: CallbackQuery) -> None:
+    if not callback.message:
+        return
+    i18n = get_i18n()
+    db = await get_db()
+    enabled = False
+    channels: List[str] = []
+    async for session in db.get_session():
+        enabled = await settings_manager.get_subscription_enabled(session)
+        channels = await settings_manager.get_subscription_channels(session)
+
+    status = i18n.get(I18nKeys.ADMIN_SUB_STATUS_ON) if enabled else i18n.get(I18nKeys.ADMIN_SUB_STATUS_OFF)
+    channels_text = "\n".join(f"{idx + 1}. {ch}" for idx, ch in enumerate(channels)) if channels else "-"
+    text = i18n.get(I18nKeys.ADMIN_SUB_TITLE, status=status, channels=channels_text)
+
+    buttons: List[List[InlineKeyboardButton]] = [
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_SUB_BTN_TOGGLE_OFF if enabled else I18nKeys.ADMIN_SUB_BTN_TOGGLE_ON),
+            callback_data=CallbackPrefixes.ADMIN_SUB_TOGGLE,
+        )],
+        [InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_SUB_BTN_ADD),
+            callback_data=CallbackPrefixes.ADMIN_SUB_ADD,
+        )],
+    ]
+    for idx, ch in enumerate(channels):
+        buttons.append([InlineKeyboardButton(
+            text=f"{i18n.get(I18nKeys.ADMIN_SUB_BTN_REMOVE)}: {ch}",
+            callback_data=f"{CallbackPrefixes.ADMIN_SUB_REMOVE}{idx}",
+        )])
+    buttons.append([_admin_back_button()])
+
+    await callback.message.edit_text(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))  # type: ignore[union-attr]
+    await callback.answer()
+
+
+async def handle_admin_subscription(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    await _show_admin_subscription(callback)
+
+
+async def handle_admin_sub_toggle(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    if not callback.from_user:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    db = await get_db()
+    async for session in db.get_session():
+        current = await settings_manager.get_subscription_enabled(session)
+        await settings_manager.set_subscription_enabled(session, not current)
+        await audit_service.log_action(session, callback.from_user.id, AuditActions.SUBSCRIPTION_UPDATED, f"enabled={not current}")
+    await _show_admin_subscription(callback)
+
+
+async def handle_admin_sub_add(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    if not callback.from_user or not callback.message:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    i18n = get_i18n()
+    get_state_service().set_state(callback.from_user.id, STATES["SUB_ADD_CHANNEL"])
+    await callback.message.edit_text(i18n.get(I18nKeys.ADMIN_SUB_ENTER_CHANNEL), reply_markup=InlineKeyboardMarkup(inline_keyboard=[[_admin_back_button()]]))  # type: ignore[union-attr]
+    await callback.answer()
+
+
+async def handle_admin_sub_remove(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    if not callback.data or not callback.from_user:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    try:
+        idx = int(callback.data.replace(CallbackPrefixes.ADMIN_SUB_REMOVE, ""))
+    except Exception:
+        return
+    db = await get_db()
+    async for session in db.get_session():
+        channels_before = await settings_manager.get_subscription_channels(session)
+        await settings_manager.remove_subscription_channel(session, idx)
+        await audit_service.log_action(session, callback.from_user.id, AuditActions.SUBSCRIPTION_UPDATED, f"remove_index={idx} from={channels_before}")
+    await callback.answer(get_i18n().get(I18nKeys.ADMIN_SUB_REMOVED), show_alert=True)
+    await _show_admin_subscription(callback)
+
+
+async def handle_admin_stats(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    if not callback.message:
+        return
+    i18n = get_i18n()
+    db = await get_db()
+    stats: Dict[str, int] = {}
+    async for session in db.get_session():
+        stats = await stats_service.collect_basic(session)
+    await callback.message.edit_text(i18n.get(I18nKeys.ADMIN_STATS_TITLE, **stats), reply_markup=InlineKeyboardMarkup(inline_keyboard=[[_admin_back_button()]]))  # type: ignore[union-attr]
+    await callback.answer()
+
+
+async def _show_admin_broadcast(callback: CallbackQuery) -> None:
+    if not callback.message:
+        return
+    i18n = get_i18n()
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=i18n.get(I18nKeys.ADMIN_BROADCAST_BTN_TEXT), callback_data=CallbackPrefixes.ADMIN_BROADCAST_TEXT)],
+        [InlineKeyboardButton(text=i18n.get(I18nKeys.ADMIN_BROADCAST_BTN_FILE), callback_data=CallbackPrefixes.ADMIN_BROADCAST_FILE)],
+        [_admin_back_button()],
+    ])
+    await callback.message.edit_text(i18n.get(I18nKeys.ADMIN_BROADCAST_TITLE), reply_markup=kb)  # type: ignore[union-attr]
+    await callback.answer()
+
+
+async def handle_admin_broadcast(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    await _show_admin_broadcast(callback)
+
+
+async def handle_admin_broadcast_text(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    if not callback.from_user or not callback.message:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    get_state_service().set_state(callback.from_user.id, STATES["BROADCAST_TEXT"])
+    await callback.message.edit_text(get_i18n().get(I18nKeys.ADMIN_BROADCAST_ENTER_TEXT), reply_markup=InlineKeyboardMarkup(inline_keyboard=[[_admin_back_button()]]))  # type: ignore[union-attr]
+    await callback.answer()
+
+
+async def handle_admin_broadcast_file(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    if not callback.from_user or not callback.message:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    get_state_service().set_state(callback.from_user.id, STATES["BROADCAST_FILE"])
+    await callback.message.edit_text(get_i18n().get(I18nKeys.ADMIN_BROADCAST_ENTER_FILE), reply_markup=InlineKeyboardMarkup(inline_keyboard=[[_admin_back_button()]]))  # type: ignore[union-attr]
+    await callback.answer()
+
+
+async def _run_broadcast(callback: CallbackQuery, payload: Dict[str, Any]) -> None:
+    if not callback.from_user:
+        return
+    i18n = get_i18n()
+    bot = callback.bot
+    if bot is None:
+        return
+
+    db = await get_db()
+    user_ids: List[int] = []
+    async for session in db.get_session():
+        user_ids = await user_service.list_user_ids(session)
+
+    success = 0
+    failed = 0
+    for uid in user_ids:
+        try:
+            if payload.get("type") == "text":
+                await bot.send_message(uid, payload.get("text", ""))
+            else:
+                await bot.send_document(uid, document=payload.get("file_id", ""), caption=payload.get("caption"))
+            success += 1
+        except Exception:
+            failed += 1
+        await asyncio.sleep(0.05)
+
+    async for session in db.get_session():
+        await audit_service.log_action(session, callback.from_user.id, AuditActions.BROADCAST_SENT, f"type={payload.get('type')} success={success} failed={failed}")
+
+    await callback.answer(i18n.get(I18nKeys.ADMIN_BROADCAST_DONE, success=success, failed=failed), show_alert=True)
+    await _show_admin_broadcast(callback)
+
+
+async def handle_admin_broadcast_confirm(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    if not callback.from_user:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    state = get_state_service().get_state(callback.from_user.id)
+    if state is None or state.name not in ("admin_broadcast_confirm_text", "admin_broadcast_confirm_file"):
+        return
+    payload = state.data.get("payload", {})
+    get_state_service().clear_state(callback.from_user.id)
+    await _run_broadcast(callback, payload)
+
+
+async def handle_admin_broadcast_cancel(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    if callback.from_user:
+        get_state_service().clear_state(callback.from_user.id)
+    await callback.answer(get_i18n().get(I18nKeys.ADMIN_BROADCAST_CANCELLED), show_alert=True)
+    await _show_admin_broadcast(callback)
+
+
+async def _show_admin_ban(callback: CallbackQuery) -> None:
+    if not callback.message:
+        return
+    i18n = get_i18n()
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=i18n.get(I18nKeys.ADMIN_BAN_BTN_BLOCK), callback_data=CallbackPrefixes.ADMIN_BAN_BLOCK)],
+        [InlineKeyboardButton(text=i18n.get(I18nKeys.ADMIN_BAN_BTN_UNBLOCK), callback_data=CallbackPrefixes.ADMIN_BAN_UNBLOCK)],
+        [_admin_back_button()],
+    ])
+    await callback.message.edit_text(i18n.get(I18nKeys.ADMIN_BAN_TITLE), reply_markup=kb)  # type: ignore[union-attr]
+    await callback.answer()
+
+
+async def handle_admin_ban(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_USERS):
+        return
+    await _show_admin_ban(callback)
+
+
+async def handle_admin_ban_block(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    if not callback.from_user or not callback.message:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_USERS):
+        return
+    get_state_service().set_state(callback.from_user.id, STATES["BAN_BLOCK"])
+    await callback.message.edit_text(get_i18n().get(I18nKeys.ADMIN_BAN_ENTER_ID_BLOCK), reply_markup=InlineKeyboardMarkup(inline_keyboard=[[_admin_back_button()]]))  # type: ignore[union-attr]
+    await callback.answer()
+
+
+async def handle_admin_ban_unblock(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    if not callback.from_user or not callback.message:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_USERS):
+        return
+    get_state_service().set_state(callback.from_user.id, STATES["BAN_UNBLOCK"])
+    await callback.message.edit_text(get_i18n().get(I18nKeys.ADMIN_BAN_ENTER_ID_UNBLOCK), reply_markup=InlineKeyboardMarkup(inline_keyboard=[[_admin_back_button()]]))  # type: ignore[union-attr]
+    await callback.answer()
+
+
+async def _show_admin_maintenance(callback: CallbackQuery) -> None:
+    if not callback.message:
+        return
+    i18n = get_i18n()
+    db = await get_db()
+    enabled = False
+    message = i18n.get(I18nKeys.MAINTENANCE_DEFAULT_MESSAGE)
+    async for session in db.get_session():
+        enabled = await settings_manager.get_maintenance_enabled(session)
+        message = await settings_manager.get_maintenance_message(session, default=message)
+
+    status = i18n.get(I18nKeys.ADMIN_SUB_STATUS_ON) if enabled else i18n.get(I18nKeys.ADMIN_SUB_STATUS_OFF)
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=i18n.get(I18nKeys.ADMIN_MAINT_BTN_TOGGLE_OFF if enabled else I18nKeys.ADMIN_MAINT_BTN_TOGGLE_ON), callback_data=CallbackPrefixes.ADMIN_MAINT_TOGGLE)],
+        [InlineKeyboardButton(text=i18n.get(I18nKeys.ADMIN_MAINT_BTN_SET_MESSAGE), callback_data=CallbackPrefixes.ADMIN_MAINT_SET_MESSAGE)],
+        [InlineKeyboardButton(text=i18n.get(I18nKeys.ADMIN_MAINT_BTN_BACKUP_EXPORT), callback_data=CallbackPrefixes.ADMIN_BACKUP_EXPORT)],
+        [InlineKeyboardButton(text=i18n.get(I18nKeys.ADMIN_MAINT_BTN_BACKUP_RESTORE), callback_data=CallbackPrefixes.ADMIN_BACKUP_RESTORE)],
+        [_admin_back_button()],
+    ])
+    await callback.message.edit_text(i18n.get(I18nKeys.ADMIN_MAINT_TITLE, status=status, message=message), reply_markup=kb)  # type: ignore[union-attr]
+    await callback.answer()
+
+
+async def handle_admin_maintenance(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    await _show_admin_maintenance(callback)
+
+
+async def handle_admin_maint_toggle(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    if not callback.from_user:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    db = await get_db()
+    async for session in db.get_session():
+        current = await settings_manager.get_maintenance_enabled(session)
+        await settings_manager.set_maintenance_enabled(session, not current)
+        await audit_service.log_action(session, callback.from_user.id, AuditActions.MAINTENANCE_TOGGLED, f"enabled={not current}")
+    await _show_admin_maintenance(callback)
+
+
+async def handle_admin_maint_set_message(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    if not callback.from_user or not callback.message:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    get_state_service().set_state(callback.from_user.id, STATES["MAINT_MESSAGE"])
+    await callback.message.edit_text(get_i18n().get(I18nKeys.ADMIN_MAINT_ENTER_MESSAGE), reply_markup=InlineKeyboardMarkup(inline_keyboard=[[_admin_back_button()]]))  # type: ignore[union-attr]
+    await callback.answer()
+
+
+async def handle_admin_backup_export(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    if not callback.from_user:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    db = await get_db()
+    backup_path = ""
+    async for session in db.get_session():
+        backup_path = await backup_service.export_backup(session)
+        await audit_service.log_action(session, callback.from_user.id, AuditActions.BACKUP_EXPORTED, backup_path)
+    if callback.message and backup_path:
+        await callback.message.answer_document(FSInputFile(backup_path), caption=Path(backup_path).name)
+    await callback.answer(get_i18n().get(I18nKeys.ADMIN_BACKUP_EXPORTED), show_alert=True)
+
+
+async def handle_admin_backup_restore(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    if not callback.from_user or not callback.message:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
+    get_state_service().set_state(callback.from_user.id, STATES["BACKUP_RESTORE"])
+    await callback.message.edit_text(get_i18n().get(I18nKeys.ADMIN_BACKUP_RESTORE_PROMPT), reply_markup=InlineKeyboardMarkup(inline_keyboard=[[_admin_back_button()]]))  # type: ignore[union-attr]
+    await callback.answer()
+
+
 def _is_admin_text_state(message: Message) -> bool:
-    if not message.from_user or not message.text:
+    if not message.from_user:
         return False
     state_service = get_state_service()
     state = state_service.get_state(message.from_user.id)
     if state is None:
         return False
-    return state.name in (STATES["MOD_ADD"], STATES["TEXT_EDIT"], STATES["CONTRIBUTE_UPLOAD"])
+    return state.name in (
+        STATES["MOD_ADD"],
+        STATES["TEXT_EDIT"],
+        STATES["CONTRIBUTE_UPLOAD"],
+        STATES["SUB_ADD_CHANNEL"],
+        STATES["BROADCAST_TEXT"],
+        STATES["BROADCAST_FILE"],
+        STATES["BAN_BLOCK"],
+        STATES["BAN_UNBLOCK"],
+        STATES["MAINT_MESSAGE"],
+        STATES["BACKUP_RESTORE"],
+        "admin_broadcast_confirm_text",
+        "admin_broadcast_confirm_file",
+    )
 
 
 def create_admin_router() -> Router:
@@ -1280,8 +1635,156 @@ def create_admin_router() -> Router:
             await _handle_text_edit_input(message, state, kwargs)
         elif state.name == STATES["CONTRIBUTE_UPLOAD"]:
             await _handle_contribute_upload(message, state)
+        elif state.name == STATES["SUB_ADD_CHANNEL"]:
+            await _handle_sub_add_channel_input(message, kwargs)
+        elif state.name == STATES["BROADCAST_TEXT"]:
+            await _handle_broadcast_text_input(message, kwargs)
+        elif state.name == STATES["BROADCAST_FILE"]:
+            await _handle_broadcast_file_input(message, kwargs)
+        elif state.name in (STATES["BAN_BLOCK"], STATES["BAN_UNBLOCK"]):
+            await _handle_ban_input(message, state, kwargs)
+        elif state.name == STATES["MAINT_MESSAGE"]:
+            await _handle_maintenance_message_input(message, kwargs)
+        elif state.name == STATES["BACKUP_RESTORE"]:
+            await _handle_backup_restore_input(message, kwargs)
 
     return router
+
+
+async def _handle_sub_add_channel_input(message: Message, kwargs: Dict[str, Any]) -> None:
+    if not message.from_user or not message.text:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not has_permission(role, Permission.MANAGE_SETTINGS):
+        return
+    channel = message.text.strip()
+    db = await get_db()
+    async for session in db.get_session():
+        await settings_manager.add_subscription_channel(session, channel)
+        await audit_service.log_action(session, message.from_user.id, AuditActions.SUBSCRIPTION_UPDATED, f"add_channel={channel}")
+    get_state_service().clear_state(message.from_user.id)
+    await message.answer(get_i18n().get(I18nKeys.ADMIN_SUB_ADDED))
+
+
+async def _handle_broadcast_text_input(message: Message, kwargs: Dict[str, Any]) -> None:
+    if not message.from_user or not message.text:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not has_permission(role, Permission.MANAGE_SETTINGS):
+        return
+    i18n = get_i18n()
+    get_state_service().set_state(message.from_user.id, "admin_broadcast_confirm_text", data={
+        "payload": {"type": "text", "text": message.text},
+    })
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=i18n.get(I18nKeys.ADMIN_BROADCAST_BTN_CONFIRM), callback_data=CallbackPrefixes.ADMIN_BROADCAST_CONFIRM)],
+        [InlineKeyboardButton(text=i18n.get(I18nKeys.ADMIN_BROADCAST_BTN_CANCEL), callback_data=CallbackPrefixes.ADMIN_BROADCAST_CANCEL)],
+    ])
+    await message.answer(i18n.get(I18nKeys.ADMIN_BROADCAST_CONFIRM_TEXT, text=message.text), reply_markup=kb)
+
+
+async def _handle_broadcast_file_input(message: Message, kwargs: Dict[str, Any]) -> None:
+    if not message.from_user:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not has_permission(role, Permission.MANAGE_SETTINGS):
+        return
+    from bot.handlers.files import _extract_file_info
+    info = _extract_file_info(message)
+    if info is None:
+        return
+    i18n = get_i18n()
+    get_state_service().set_state(message.from_user.id, "admin_broadcast_confirm_file", data={
+        "payload": {
+            "type": "file",
+            "file_id": info["file_id"],
+            "caption": message.caption,
+            "name": info.get("name", "file"),
+        }
+    })
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=i18n.get(I18nKeys.ADMIN_BROADCAST_BTN_CONFIRM), callback_data=CallbackPrefixes.ADMIN_BROADCAST_CONFIRM)],
+        [InlineKeyboardButton(text=i18n.get(I18nKeys.ADMIN_BROADCAST_BTN_CANCEL), callback_data=CallbackPrefixes.ADMIN_BROADCAST_CANCEL)],
+    ])
+    await message.answer(i18n.get(I18nKeys.ADMIN_BROADCAST_CONFIRM_FILE, name=info.get("name", "file")), reply_markup=kb)
+
+
+async def _handle_ban_input(message: Message, state: Any, kwargs: Dict[str, Any]) -> None:
+    if not message.from_user or not message.text:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not has_permission(role, Permission.MANAGE_USERS):
+        return
+    i18n = get_i18n()
+    value = message.text.strip()
+    if not value.isdigit():
+        await message.answer(i18n.get(I18nKeys.ADMIN_BAN_INVALID_ID))
+        return
+    target_id = int(value)
+    blocked = state.name == STATES["BAN_BLOCK"]
+    db = await get_db()
+    async for session in db.get_session():
+        await user_service.set_blocked(session, target_id, blocked)
+        await audit_service.log_action(
+            session,
+            message.from_user.id,
+            AuditActions.USER_BLOCKED if blocked else AuditActions.USER_UNBLOCKED,
+            f"target_id={target_id}",
+        )
+    get_state_service().clear_state(message.from_user.id)
+    await message.answer(i18n.get(I18nKeys.ADMIN_BAN_BLOCKED if blocked else I18nKeys.ADMIN_BAN_UNBLOCKED, user_id=target_id))
+
+
+async def _handle_maintenance_message_input(message: Message, kwargs: Dict[str, Any]) -> None:
+    if not message.from_user or not message.text:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    if not has_permission(role, Permission.MANAGE_SETTINGS):
+        return
+    db = await get_db()
+    async for session in db.get_session():
+        await settings_manager.set_maintenance_message(session, message.text.strip())
+        await audit_service.log_action(session, message.from_user.id, AuditActions.MAINTENANCE_TOGGLED, "maintenance_message_updated")
+    get_state_service().clear_state(message.from_user.id)
+    await message.answer(get_i18n().get(I18nKeys.ADMIN_MAINT_UPDATED))
+
+
+async def _handle_backup_restore_input(message: Message, kwargs: Dict[str, Any]) -> None:
+    if not message.from_user:
+        return
+    role = kwargs.get("user_role", UserRole.USER)
+    i18n = get_i18n()
+    if not has_permission(role, Permission.MANAGE_SETTINGS):
+        return
+
+    payload_text = ""
+    if message.document:
+        bot = message.bot
+        if bot is None:
+            return
+        downloaded = await bot.download(message.document)
+        if downloaded is None:
+            await message.answer(i18n.get(I18nKeys.ADMIN_BACKUP_FAILED))
+            return
+        payload_text = downloaded.read().decode("utf-8")
+    elif message.text:
+        payload_text = message.text
+    else:
+        return
+
+    try:
+        data = json.loads(payload_text)
+    except Exception:
+        await message.answer(i18n.get(I18nKeys.ADMIN_BACKUP_FAILED))
+        return
+
+    db = await get_db()
+    async for session in db.get_session():
+        await backup_service.restore_backup(session, data)
+        await audit_service.log_action(session, message.from_user.id, AuditActions.BACKUP_RESTORED, "backup_restored")
+
+    get_state_service().clear_state(message.from_user.id)
+    await message.answer(i18n.get(I18nKeys.ADMIN_BACKUP_RESTORED))
 
 
 async def _handle_mod_add_input(message: Message, state: Any, kwargs: Dict[str, Any]) -> None:
@@ -1330,6 +1833,15 @@ async def _handle_mod_add_input(message: Message, state: Any, kwargs: Dict[str, 
 
     state_service.clear_state(user_id)
     await message.answer(i18n.get(I18nKeys.ADMIN_MOD_ADDED, name=target_user.first_name if target_user else ""))
+
+    if target_user is not None and message.bot is not None:
+        try:
+            await message.bot.send_message(
+                target_user.id,
+                "✅ تم تعيينك كمشرف في البوت. يمكنك الآن الدخول إلى لوحة التحكم حسب صلاحياتك.",
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send moderator assignment notification to {target_user.id}: {e}")
 
 
 async def _handle_text_edit_input(message: Message, state: Any, kwargs: Dict[str, Any]) -> None:

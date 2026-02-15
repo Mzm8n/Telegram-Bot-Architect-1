@@ -174,38 +174,68 @@ async def handle_tools_callback(callback: CallbackQuery, kwargs: Dict[str, Any])
     await _send_placeholder(callback, "tools", "tools")
 
 
-def build_admin_panel_keyboard() -> InlineKeyboardMarkup:
+def build_admin_panel_keyboard(role: UserRole = UserRole.USER) -> InlineKeyboardMarkup:
     i18n = get_i18n()
-    buttons = [
-        [InlineKeyboardButton(
+    buttons = []
+
+    if has_permission(role, Permission.MANAGE_SECTIONS):
+        buttons.append([InlineKeyboardButton(
             text=i18n.get(I18nKeys.ADMIN_BTN_SECTIONS),
             callback_data=CallbackPrefixes.ADMIN_SECTIONS,
-        )],
-        [InlineKeyboardButton(
+        )])
+
+    if has_permission(role, Permission.MANAGE_FILES):
+        buttons.append([InlineKeyboardButton(
             text=i18n.get(I18nKeys.ADMIN_BTN_FILES),
             callback_data=CallbackPrefixes.ADMIN_FILES,
-        )],
-        [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.ADMIN_BTN_MODERATORS),
-            callback_data=CallbackPrefixes.ADMIN_MODERATORS,
-        )],
-        [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.ADMIN_BTN_TEXTS),
-            callback_data=CallbackPrefixes.ADMIN_TEXTS,
-        )],
-        [InlineKeyboardButton(
+        )])
+        buttons.append([InlineKeyboardButton(
             text=i18n.get(I18nKeys.ADMIN_BTN_CONTRIBUTIONS),
             callback_data=CallbackPrefixes.ADMIN_CONTRIBUTIONS,
-        )],
-        [InlineKeyboardButton(
+        )])
+
+    if has_permission(role, Permission.MANAGE_USERS):
+        buttons.append([InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_MODERATORS),
+            callback_data=CallbackPrefixes.ADMIN_MODERATORS,
+        )])
+        buttons.append([InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_BAN),
+            callback_data=CallbackPrefixes.ADMIN_BAN,
+        )])
+
+    if has_permission(role, Permission.MANAGE_SETTINGS):
+        buttons.append([InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_TEXTS),
+            callback_data=CallbackPrefixes.ADMIN_TEXTS,
+        )])
+        buttons.append([InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_SUBSCRIPTION),
+            callback_data=CallbackPrefixes.ADMIN_SUBSCRIPTION,
+        )])
+        buttons.append([InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_STATS),
+            callback_data=CallbackPrefixes.ADMIN_STATS,
+        )])
+        buttons.append([InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_BROADCAST),
+            callback_data=CallbackPrefixes.ADMIN_BROADCAST,
+        )])
+        buttons.append([InlineKeyboardButton(
+            text=i18n.get(I18nKeys.ADMIN_BTN_MAINTENANCE),
+            callback_data=CallbackPrefixes.ADMIN_MAINTENANCE,
+        )])
+
+    if has_permission(role, Permission.VIEW_AUDIT_LOG):
+        buttons.append([InlineKeyboardButton(
             text=i18n.get(I18nKeys.ADMIN_BTN_AUDIT),
             callback_data=CallbackPrefixes.ADMIN_AUDIT,
-        )],
-        [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.SECTIONS_BTN_HOME),
-            callback_data=CallbackPrefixes.HOME,
-        )],
-    ]
+        )])
+
+    buttons.append([InlineKeyboardButton(
+        text=i18n.get(I18nKeys.SECTIONS_BTN_HOME),
+        callback_data=CallbackPrefixes.HOME,
+    )])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
@@ -224,7 +254,7 @@ async def handle_admin_panel_callback(callback: CallbackQuery, kwargs: Dict[str,
 
     await callback.message.edit_text(  # type: ignore[union-attr]
         i18n.get(I18nKeys.ADMIN_PANEL_TEXT),
-        reply_markup=build_admin_panel_keyboard(),
+        reply_markup=build_admin_panel_keyboard(role),
     )
     await callback.answer()
 
