@@ -1,11 +1,13 @@
 import logging
-from typing import Optional
+from typing import Optional, Set
 
 from aiogram.types import CallbackQuery
 
 from bot.models.user import UserRole
 from bot.core.constants import I18nKeys
 from bot.services.i18n import get_i18n
+from bot.core.database import get_db
+from bot.services.moderator import moderator_service
 
 logger = logging.getLogger("bot")
 
@@ -28,6 +30,7 @@ ROLE_PERMISSIONS = {
     UserRole.MODERATOR: {
         Permission.BROWSE,
         Permission.UPLOAD_FILE,
+        Permission.VIEW_ADMIN_PANEL,
     },
     UserRole.ADMIN: {
         Permission.BROWSE,
@@ -46,6 +49,27 @@ def has_permission(role: UserRole, permission: str) -> bool:
     return permission in ROLE_PERMISSIONS.get(role, set())
 
 
+async def get_effective_permissions(user_id: int, role: UserRole) -> Set[str]:
+    permissions = set(ROLE_PERMISSIONS.get(role, set()))
+
+    if role != UserRole.MODERATOR:
+        return permissions
+
+    db = await get_db()
+    async for session in db.get_session():
+        moderator_permissions = await moderator_service.get_permissions(session, user_id)
+
+    if moderator_permissions is None:
+        return permissions
+
+    if moderator_permissions.can_upload or moderator_permissions.can_link or moderator_permissions.can_publish:
+        permissions.add(Permission.MANAGE_FILES)
+    else:
+        permissions.discard(Permission.MANAGE_FILES)
+
+    return permissions
+
+
 def is_admin(role: UserRole) -> bool:
     return role == UserRole.ADMIN
 
@@ -59,11 +83,15 @@ async def check_permission_and_notify(
     role: UserRole,
     permission: str,
 ) -> bool:
-    if has_permission(role, permission):
+    user_id = callback.from_user.id if callback.from_user else 0
+    if user_id:
+        permissions = await get_effective_permissions(user_id, role)
+        if permission in permissions:
+            return True
+    elif has_permission(role, permission):
         return True
 
     from bot.core.constants import LogMessages
-    user_id = callback.from_user.id if callback.from_user else 0
     logger.warning(LogMessages.PERMISSION_DENIED.format(user_id=user_id, permission=permission))
 
     i18n = get_i18n()
