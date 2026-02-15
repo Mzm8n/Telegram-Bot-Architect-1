@@ -1235,6 +1235,9 @@ async def handle_section_confirm_copy(callback: CallbackQuery, kwargs: Dict[str,
 
 
 async def handle_admin_back(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.VIEW_ADMIN_PANEL):
+        return
     from bot.handlers.home import handle_admin_panel_callback
     await handle_admin_panel_callback(callback, kwargs)
 
@@ -1462,6 +1465,9 @@ async def handle_admin_broadcast_confirm(callback: CallbackQuery, kwargs: Dict[s
 
 
 async def handle_admin_broadcast_cancel(callback: CallbackQuery, kwargs: Dict[str, Any]) -> None:
+    role = kwargs.get("user_role", UserRole.USER)
+    if not await check_permission_and_notify(callback, role, Permission.MANAGE_SETTINGS):
+        return
     if callback.from_user:
         get_state_service().clear_state(callback.from_user.id)
     await callback.answer(get_i18n().get(I18nKeys.ADMIN_BROADCAST_CANCELLED), show_alert=True)
@@ -1833,6 +1839,18 @@ async def _handle_mod_add_input(message: Message, state: Any, kwargs: Dict[str, 
 
     state_service.clear_state(user_id)
     await message.answer(i18n.get(I18nKeys.ADMIN_MOD_ADDED, name=target_user.first_name if target_user else ""))
+
+    if message.bot and target_user:
+        try:
+            await message.bot.send_message(
+                target_user.id,
+                i18n.get(I18nKeys.ADMIN_MOD_ADDED, name=target_user.first_name or ""),
+            )
+        except Exception:
+            logger.warning(
+                "Failed to send moderator assignment notification",
+                exc_info=True,
+            )
 
 
 async def _handle_text_edit_input(message: Message, state: Any, kwargs: Dict[str, Any]) -> None:

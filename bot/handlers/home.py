@@ -8,7 +8,7 @@ from aiogram.filters import Command
 from bot.core.constants import LogMessages, I18nKeys, CallbackPrefixes
 from bot.services.i18n import get_i18n
 from bot.services.state import get_state_service
-from bot.services.permissions import has_permission, Permission
+from bot.services.permissions import has_permission, Permission, get_effective_permissions
 from bot.models.user import UserRole
 
 logger = logging.getLogger("bot")
@@ -174,58 +174,76 @@ async def handle_tools_callback(callback: CallbackQuery, kwargs: Dict[str, Any])
     await _send_placeholder(callback, "tools", "tools")
 
 
-def build_admin_panel_keyboard() -> InlineKeyboardMarkup:
+async def build_admin_panel_keyboard(user_id: int, role: UserRole) -> InlineKeyboardMarkup:
     i18n = get_i18n()
-    buttons = [
-        [InlineKeyboardButton(
+    permissions = await get_effective_permissions(user_id, role)
+    buttons = []
+
+    if Permission.MANAGE_SECTIONS in permissions:
+        buttons.append([InlineKeyboardButton(
             text=i18n.get(I18nKeys.ADMIN_BTN_SECTIONS),
             callback_data=CallbackPrefixes.ADMIN_SECTIONS,
-        )],
-        [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.ADMIN_BTN_FILES),
-            callback_data=CallbackPrefixes.ADMIN_FILES,
-        )],
-        [InlineKeyboardButton(
+        )])
+
+    if Permission.MANAGE_FILES in permissions:
+        buttons.extend([
+            [InlineKeyboardButton(
+                text=i18n.get(I18nKeys.ADMIN_BTN_FILES),
+                callback_data=CallbackPrefixes.ADMIN_FILES,
+            )],
+            [InlineKeyboardButton(
+                text=i18n.get(I18nKeys.ADMIN_BTN_CONTRIBUTIONS),
+                callback_data=CallbackPrefixes.ADMIN_CONTRIBUTIONS,
+            )],
+        ])
+
+    if Permission.MANAGE_USERS in permissions:
+        buttons.append([InlineKeyboardButton(
             text=i18n.get(I18nKeys.ADMIN_BTN_MODERATORS),
             callback_data=CallbackPrefixes.ADMIN_MODERATORS,
-        )],
-        [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.ADMIN_BTN_TEXTS),
-            callback_data=CallbackPrefixes.ADMIN_TEXTS,
-        )],
-        [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.ADMIN_BTN_CONTRIBUTIONS),
-            callback_data=CallbackPrefixes.ADMIN_CONTRIBUTIONS,
-        )],
-        [InlineKeyboardButton(
+        )])
+
+    if Permission.MANAGE_SETTINGS in permissions:
+        buttons.extend([
+            [InlineKeyboardButton(
+                text=i18n.get(I18nKeys.ADMIN_BTN_TEXTS),
+                callback_data=CallbackPrefixes.ADMIN_TEXTS,
+            )],
+            [InlineKeyboardButton(
+                text=i18n.get(I18nKeys.ADMIN_BTN_SUBSCRIPTION),
+                callback_data=CallbackPrefixes.ADMIN_SUBSCRIPTION,
+            )],
+            [InlineKeyboardButton(
+                text=i18n.get(I18nKeys.ADMIN_BTN_STATS),
+                callback_data=CallbackPrefixes.ADMIN_STATS,
+            )],
+            [InlineKeyboardButton(
+                text=i18n.get(I18nKeys.ADMIN_BTN_BROADCAST),
+                callback_data=CallbackPrefixes.ADMIN_BROADCAST,
+            )],
+            [InlineKeyboardButton(
+                text=i18n.get(I18nKeys.ADMIN_BTN_MAINTENANCE),
+                callback_data=CallbackPrefixes.ADMIN_MAINTENANCE,
+            )],
+        ])
+
+    if Permission.VIEW_AUDIT_LOG in permissions:
+        buttons.append([InlineKeyboardButton(
             text=i18n.get(I18nKeys.ADMIN_BTN_AUDIT),
             callback_data=CallbackPrefixes.ADMIN_AUDIT,
-        )],
-        [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.ADMIN_BTN_SUBSCRIPTION),
-            callback_data=CallbackPrefixes.ADMIN_SUBSCRIPTION,
-        )],
-        [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.ADMIN_BTN_STATS),
-            callback_data=CallbackPrefixes.ADMIN_STATS,
-        )],
-        [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.ADMIN_BTN_BROADCAST),
-            callback_data=CallbackPrefixes.ADMIN_BROADCAST,
-        )],
-        [InlineKeyboardButton(
+        )])
+
+    if Permission.MANAGE_USERS in permissions:
+        buttons.append([InlineKeyboardButton(
             text=i18n.get(I18nKeys.ADMIN_BTN_BAN),
             callback_data=CallbackPrefixes.ADMIN_BAN,
-        )],
-        [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.ADMIN_BTN_MAINTENANCE),
-            callback_data=CallbackPrefixes.ADMIN_MAINTENANCE,
-        )],
-        [InlineKeyboardButton(
-            text=i18n.get(I18nKeys.SECTIONS_BTN_HOME),
-            callback_data=CallbackPrefixes.HOME,
-        )],
-    ]
+        )])
+
+    buttons.append([InlineKeyboardButton(
+        text=i18n.get(I18nKeys.SECTIONS_BTN_HOME),
+        callback_data=CallbackPrefixes.HOME,
+    )])
+
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
@@ -244,7 +262,7 @@ async def handle_admin_panel_callback(callback: CallbackQuery, kwargs: Dict[str,
 
     await callback.message.edit_text(  # type: ignore[union-attr]
         i18n.get(I18nKeys.ADMIN_PANEL_TEXT),
-        reply_markup=build_admin_panel_keyboard(),
+        reply_markup=await build_admin_panel_keyboard(callback.from_user.id, role),
     )
     await callback.answer()
 
